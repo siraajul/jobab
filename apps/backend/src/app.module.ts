@@ -21,6 +21,7 @@ import { EmbeddingsModule } from './embeddings/embeddings.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
 import { TeamModule } from './team/team.module';
+import { TagsModule } from './tags/tags.module';
 import { CommentsModule } from './comments/comments.module';
 import { PushModule } from './push/push.module';
 import { ObservabilityModule } from './observability/observability.module';
@@ -66,6 +67,7 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
     SettingsModule,
     OnboardingModule,
     TeamModule,
+    TagsModule,
     CommentsModule,
     PushModule,
     HealthModule,

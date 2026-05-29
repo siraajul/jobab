@@ -1,12 +1,15 @@
 import type {
   AnalyticsSummary,
+  ConversationActivityItem,
   ConversationDetail,
   ConversationListItem,
   OnboardingStatus,
   Order,
+  Note,
   OrderListItem,
   Product,
   SettingsPayload,
+  Tag,
 } from './types';
 
 /**
@@ -147,6 +150,28 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ productId }),
     }),
+  conversationActivity: (id: string, limit = 50) =>
+    fetcher<ConversationActivityItem[]>(`/conversations/${id}/activity?limit=${limit}`),
+  addConversationTag: (id: string, tagId: string) =>
+    fetcher<{ ok: boolean }>(`/conversations/${id}/tags`, {
+      method: 'POST',
+      body: JSON.stringify({ tagId }),
+    }),
+  removeConversationTag: (id: string, tagId: string) =>
+    fetcher<{ ok: boolean }>(`/conversations/${id}/tags/${tagId}`, { method: 'DELETE' }),
+  conversationNotes: (id: string) => fetcher<Note[]>(`/conversations/${id}/notes`),
+  addConversationNote: (id: string, body: string) =>
+    fetcher<Note>(`/conversations/${id}/notes`, { method: 'POST', body: JSON.stringify({ body }) }),
+  deleteConversationNote: (id: string, noteId: string) =>
+    fetcher<{ ok: boolean }>(`/conversations/${id}/notes/${noteId}`, { method: 'DELETE' }),
+
+  // ─── tags ──────────────────────────────────────────────────────────────
+  listTags: () => fetcher<Tag[]>('/tags'),
+  createTag: (name: string, color?: string) =>
+    fetcher<Tag>('/tags', { method: 'POST', body: JSON.stringify({ name, color }) }),
+  updateTag: (id: string, patch: { name?: string; color?: string }) =>
+    fetcher<Tag>(`/tags/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+  deleteTag: (id: string) => fetcher<{ ok: boolean }>(`/tags/${id}`, { method: 'DELETE' }),
 
   // ─── orders ────────────────────────────────────────────────────────────
   listOrders: (q?: { status?: string; payment?: string }) => {

@@ -3,17 +3,21 @@ import { ThemeToggle } from '@/components/shared/ThemeToggle';
 
 export function ListHeader({
   counts,
+  shopName,
 }: {
   counts: { needs: number; ai: number; you: number };
+  shopName: string | null;
 }) {
+  // Fall back to a neutral label until settings load, so the header never
+  // flashes a stale hardcoded store name.
+  const name = shopName?.trim() || 'Your inbox';
   return (
     <header className="px-4 pb-3 pt-5 sm:px-5 sm:pt-6">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="font-display text-[26px] font-bold leading-[0.95] tracking-display sm:text-[32px]">
-            Rongdhonu
-            <br />
-            Boutique<span className="text-accent">.</span>
+        <div className="min-w-0">
+          <h1 className="font-display text-[26px] font-bold leading-[1.05] tracking-display sm:text-[32px] break-words">
+            {name}
+            <span className="text-accent">.</span>
           </h1>
           <div className="mt-2 text-[11px] uppercase tracking-[0.18em] text-ink-3 sm:text-[12.5px]">
             Today's inbox

@@ -65,6 +65,17 @@ enum ConversationStatus {
   closed
 }
 
+// Why a conversation was handed off to a human. The first three are
+// "problems" that surface in the dashboard Complaints section.
+enum HandoffCategory {
+  complaint
+  refund
+  payment_dispute
+  low_confidence
+  asked_for_human
+  other
+}
+
 enum OrderStatus {
   created
   confirmed
@@ -117,6 +128,8 @@ model Organization {
   invites              Invite[]
   auditEvents          AuditEvent[]
   commentRules         CommentRule[]
+  tags                 Tag[]
+  notes                Note[]
 
   @@map("organizations")
 }
@@ -133,6 +146,7 @@ model User {
   deviceTokens  DeviceToken[]
   sentInvites   Invite[]      @relation("InviteSender")
   auditEvents   AuditEvent[]
+  notes         Note[]        @relation("NoteAuthor")
 
   @@map("users")
 }
@@ -253,6 +267,8 @@ model Conversation {
   customerPhone            String?             @map("customer_phone")
   customerAddress          String?             @map("customer_address")
   status                   ConversationStatus  @default(bot)
+  handoffCategory          HandoffCategory?    @map("handoff_category")
+  handoffReason            String?             @map("handoff_reason")
   lastCustomerMessageAt    DateTime?           @map("last_customer_message_at")
   createdAt                DateTime            @default(now()) @map("created_at")
 
@@ -262,12 +278,62 @@ model Conversation {
   messages        Message[]
   orders          Order[]
   agentRuns       AgentRun[]
+  tags            ConversationTag[]
+  notes           Note[]
   privateRepliedComments Comment[] @relation("PrivateReply")
 
   @@unique([pageId, externalUserId])
   @@index([organizationId])
   @@index([status])
   @@map("conversations")
+}
+
+// A reusable label the merchant defines once (e.g. "Priority", "Top Client")
+// and applies to conversations. Scoped to the org; name unique per org.
+model Tag {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  name           String
+  color          String   @default("slate")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  conversations  ConversationTag[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@map("tags")
+}
+
+// Join row: a tag applied to a conversation.
+model ConversationTag {
+  conversationId String   @map("conversation_id")
+  tagId          String   @map("tag_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  tag            Tag          @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, tagId])
+  @@index([tagId])
+  @@map("conversation_tags")
+}
+
+// An internal merchant note on a conversation — never shown to the customer.
+model Note {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  conversationId String   @map("conversation_id")
+  authorUserId   String?  @map("author_user_id")
+  body           String
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  author         User?        @relation("NoteAuthor", fields: [authorUserId], references: [id])
+
+  @@index([conversationId, createdAt])
+  @@map("notes")
 }
 
 model Message {
