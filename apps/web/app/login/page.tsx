@@ -10,10 +10,11 @@ export default function LoginPage() {
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get('next') || '/inbox';
+  const reason = params.get('reason');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(reason === 'expired' ? 'Session expired — please sign in again.' : null);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +38,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg px-6">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-bg px-4 py-8 sm:px-6">
       <form
         onSubmit={submit}
         className="w-full max-w-sm overflow-hidden rounded-[20px] bg-surface shadow-lg"
