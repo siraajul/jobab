@@ -149,43 +149,46 @@ function ThreadHeader({
 }) {
   return (
     <>
-      <div className="flex items-center gap-2.5 border-b border-border bg-surface px-3 py-3 sm:gap-3 sm:px-6 sm:py-4">
+      <div className="flex items-center gap-2 border-b border-border bg-surface px-3 py-3 sm:gap-3 sm:px-6 sm:py-3.5">
         <button
           type="button"
           onClick={onBack}
-          className="-ml-1 rounded-md p-1.5 text-ink-2 transition hover:bg-surface-2 hover:text-ink xl:hidden"
+          className="-ml-1 shrink-0 rounded-md p-1.5 text-ink-2 transition hover:bg-surface-2 hover:text-ink xl:hidden"
           aria-label="Back to inbox"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
             <path d="M15 6l-6 6 6 6" />
           </svg>
         </button>
-        <Avatar name={active.customerName ?? 'Customer'} size={40} />
+        <Avatar name={active.customerName ?? 'Customer'} size={36} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            <div className="truncate font-display text-[16px] font-semibold tracking-display sm:text-[18px]">
+            <div className="truncate font-display text-[15px] font-semibold tracking-display sm:text-[17px]">
               {active.customerName ?? active.externalUserId}
             </div>
-            <JamdaniMark size={10} className="text-ink-3" />
+            <JamdaniMark size={10} className="shrink-0 text-ink-3" />
           </div>
-          <div className="truncate text-[11px] uppercase tracking-[0.14em] text-ink-3 sm:text-[12.5px]">
+          <div className="truncate text-[10.5px] uppercase tracking-[0.14em] text-ink-3 sm:text-[12px]">
             Facebook · Rongdhonu Boutique
           </div>
         </div>
+        <StatusPill status={active.status} pulse={active.status === 'bot'} />
+        {/* Customer-view toggle — only renders where there's space (≥ lg).
+            Below lg the same toggle ships in the secondary action row. */}
         <button
           type="button"
           onClick={onToggleCustomerView}
-          title={customerView ? 'Showing what the customer sees — click to return to merchant view' : 'See exactly what the customer sees'}
+          title={customerView ? 'Showing the customer view — click to switch back' : 'See exactly what the customer sees'}
+          aria-pressed={customerView}
           className={
-            'hidden shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] transition md:inline-flex ' +
+            'hidden shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] transition lg:inline-flex ' +
             (customerView
               ? 'border-accent bg-accent-soft text-accent-ink'
               : 'border-border-2 bg-surface text-ink-2 hover:bg-surface-2')
           }
         >
-          {customerView ? 'Customer view' : 'View as customer'}
+          <EyeIcon /> {customerView ? 'Customer' : 'As customer'}
         </button>
-        <StatusPill status={active.status} pulse={active.status === 'bot'} />
         <div className="hidden md:block">
           <TakeoverToggle
             status={active.status}
@@ -194,14 +197,55 @@ function ThreadHeader({
           />
         </div>
       </div>
-      <div className="border-b border-border bg-surface px-3 pb-3 md:hidden">
+      {/* Secondary action row — mobile + tablet: take-over toggle, plus the
+          customer-view chip when the header above couldn't fit it. */}
+      <div className="flex items-center justify-between gap-2 border-b border-border bg-surface px-3 pb-3 md:hidden">
         <TakeoverToggle
           status={active.status}
           onTakeOver={onTakeOver}
           onHandBack={onHandBack}
         />
+        <button
+          type="button"
+          onClick={onToggleCustomerView}
+          aria-pressed={customerView}
+          className={
+            'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] transition ' +
+            (customerView
+              ? 'border-accent bg-accent-soft text-accent-ink'
+              : 'border-border-2 bg-surface text-ink-2 hover:bg-surface-2')
+          }
+        >
+          <EyeIcon /> {customerView ? 'Customer' : 'As customer'}
+        </button>
+      </div>
+      {/* On md..lg (no space in header, no mobile row) we still need the
+          customer-view chip somewhere. */}
+      <div className="hidden items-center justify-end gap-2 border-b border-border bg-surface px-6 pb-3 md:flex lg:hidden">
+        <button
+          type="button"
+          onClick={onToggleCustomerView}
+          aria-pressed={customerView}
+          className={
+            'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] transition ' +
+            (customerView
+              ? 'border-accent bg-accent-soft text-accent-ink'
+              : 'border-border-2 bg-surface text-ink-2 hover:bg-surface-2')
+          }
+        >
+          <EyeIcon /> {customerView ? 'Customer' : 'As customer'}
+        </button>
       </div>
     </>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
   );
 }
 
