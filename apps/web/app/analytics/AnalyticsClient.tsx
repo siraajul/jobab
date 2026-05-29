@@ -30,7 +30,7 @@ export function AnalyticsClient({ initial }: { initial: AnalyticsSummary | null 
       title="Analytics"
       subtitle={data ? `${formatRange(data.range.from)} → ${formatRange(data.range.to)}` : 'Loading…'}
       actions={
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap gap-1.5">
           {RANGES.map((r) => (
             <button
               key={r.key}
@@ -147,7 +147,7 @@ function BigStat({
       <div className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-3">
         {label}
       </div>
-      <div className={cn('mt-2 font-display text-[40px] font-bold leading-none tabular-nums tracking-display', colorMap[tone])}>
+      <div className={cn('mt-2 truncate font-display text-[32px] font-bold leading-none tabular-nums tracking-display sm:text-[40px]', colorMap[tone])}>
         {value}
       </div>
       <div className="mt-2 text-[12.5px] text-ink-2">{sublabel}</div>
