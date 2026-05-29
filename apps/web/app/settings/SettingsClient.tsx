@@ -27,8 +27,13 @@ export function SettingsClient() {
         setName(s.name);
         setInstructions(s.aiInstructions);
       })
-      .catch(() => {
-        toast('error', "Couldn't load settings — is the backend up?");
+      .catch((err) => {
+        // 401s already triggered an auto-redirect to /login in the API
+        // client. Anything else is a genuine "is the backend up?" case.
+        const status = (err as { status?: number } | null)?.status;
+        if (status !== 401) {
+          toast('error', "Couldn't reach the backend. Trying again will retry.");
+        }
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -156,7 +161,7 @@ export function SettingsClient() {
                 Catalog
               </div>
             </div>
-            <dl className="mt-3 grid grid-cols-[120px_1fr] gap-y-1.5 text-[13px]">
+            <dl className="mt-3 grid grid-cols-[90px_1fr] gap-x-3 gap-y-1.5 text-[13px]">
               <dt className="text-ink-3">Source</dt>
               <dd className="font-semibold">{data.catalogSource ?? 'none'}</dd>
               <dt className="text-ink-3">Products</dt>

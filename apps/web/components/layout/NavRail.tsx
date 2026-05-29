@@ -18,7 +18,9 @@ export function NavRail() {
   const pathname = usePathname();
   return (
     <nav className="relative flex h-full w-[84px] shrink-0 flex-col items-center gap-2 border-r border-border bg-surface py-5">
-      <div className="pointer-events-none absolute inset-y-6 left-1/2 w-[18px] -translate-x-1/2 text-accent">
+      {/* Decorative jamdani trim — pushed to the right edge so it doesn't
+          render through the centered icon buttons. */}
+      <div className="pointer-events-none absolute inset-y-8 right-1.5 w-[8px] text-accent opacity-60">
         <JamdaniStrip className="h-full w-full" />
       </div>
 

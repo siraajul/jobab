@@ -40,3 +40,8 @@ export const WooSyncBodySchema = z.object({
   consumerSecret: z.string().min(1),
 });
 export type WooSyncBody = z.infer<typeof WooSyncBodySchema>;
+
+export const SetVariantStockBodySchema = z.object({
+  stockQty: z.number().int().min(0).max(1_000_000),
+});
+export type SetVariantStockBody = z.infer<typeof SetVariantStockBodySchema>;

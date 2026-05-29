@@ -20,28 +20,28 @@ export function AppShell({
         <NavRail />
       </div>
       <div className="flex min-h-0 flex-col">
-        <header className="border-b border-border bg-bg px-4 pt-5 sm:px-8 sm:pt-7">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="font-display text-[26px] font-bold leading-[0.95] tracking-display sm:text-[34px]">
+        <header className="border-b border-border bg-bg px-4 pt-5 sm:px-8 sm:pt-6">
+          <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-4">
+            <div className="min-w-0 flex-1">
+              <h1 className="font-display text-[26px] font-bold leading-[0.95] tracking-display sm:text-[32px]">
                 {title}
                 <span className="text-accent">.</span>
               </h1>
               {subtitle && (
-                <div className="mt-1 text-[11.5px] uppercase tracking-[0.18em] text-ink-3 sm:text-[12.5px]">
+                <div className="mt-1.5 truncate text-[11.5px] uppercase tracking-[0.18em] text-ink-3 sm:text-[12.5px]">
                   {subtitle}
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               {actions}
               <ThemeToggle />
               <AvatarMenu />
             </div>
           </div>
-          <JamdaniBand className="mt-4 h-2.5 text-accent sm:mt-5" />
+          <JamdaniBand className="mt-4 h-2 text-accent sm:mt-5" />
         </header>
-        <main className="flex-1 overflow-y-auto px-4 pb-8 pt-5 sm:px-8 sm:pt-7">
+        <main className="flex-1 overflow-y-auto px-4 pb-8 pt-5 sm:px-8 sm:pt-6">
           {children}
         </main>
       </div>

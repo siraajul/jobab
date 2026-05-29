@@ -16,6 +16,10 @@ import type {
  */
 const BASE = '/api/backend';
 
+/** Paths that are part of the auth flow itself — they're allowed to 401
+ *  without triggering a redirect (otherwise wrong-password kicks the user). */
+const AUTH_PATHS = new Set(['/auth/login', '/auth/sign-up', '/auth/me']);
+
 async function fetcher<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...init,
@@ -26,6 +30,18 @@ async function fetcher<T>(path: string, init: RequestInit = {}): Promise<T> {
     },
   });
   if (!res.ok) {
+    // Expired/missing session — middleware lets the page load (cookie value
+    // exists) but the API now rejects. Bounce to /login with `next=` so
+    // the user lands back where they were. Guard against loops in case
+    // /login itself fails.
+    if (res.status === 401 && typeof window !== 'undefined' && !AUTH_PATHS.has(path)) {
+      const w = window as Window & { __jobabAuthBounced?: boolean };
+      if (!w.__jobabAuthBounced) {
+        w.__jobabAuthBounced = true;
+        const next = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.replace(`/login?next=${next}&reason=expired`);
+      }
+    }
     const body = await res.text().catch(() => '');
     throw new ApiError(res.status, path, body);
   }
@@ -171,6 +187,11 @@ export const api = {
     fetcher<{ products: number; variants: number }>(`/catalog/sync/woocommerce`, {
       method: 'POST',
       body: JSON.stringify(creds),
+    }),
+  setVariantStock: (variantId: string, stockQty: number) =>
+    fetcher<{ id: string; stockQty: number }>(`/catalog/variants/${variantId}/stock`, {
+      method: 'PATCH',
+      body: JSON.stringify({ stockQty }),
     }),
 
   // ─── analytics / settings / onboarding ─────────────────────────────────

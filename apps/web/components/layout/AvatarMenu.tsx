@@ -75,11 +75,11 @@ export function AvatarMenu() {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-40 mt-2 w-64 overflow-hidden rounded-xl border border-border-2 bg-surface shadow-md"
+          className="absolute right-0 z-[55] mt-2 w-64 overflow-hidden rounded-xl border border-border-2 bg-surface shadow-md"
         >
           <div className="border-b border-border px-4 py-3">
-            <div className="font-display text-[15px] font-semibold tracking-display">{name}</div>
-            <div className="text-[12px] text-ink-2">{user.email}</div>
+            <div className="truncate font-display text-[15px] font-semibold tracking-display">{name}</div>
+            <div className="truncate text-[12px] text-ink-2">{user.email}</div>
             <div className="mt-1 inline-block rounded-full bg-accent-soft px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.14em] text-accent-ink">
               {role}
             </div>

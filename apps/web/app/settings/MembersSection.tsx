@@ -52,12 +52,12 @@ export function MembersSection({ currentRole }: { currentRole: Role }) {
         </div>
         <ul className="mt-2 divide-y divide-border">
           {(members ?? []).map((m) => (
-            <li key={m.id} className="flex items-center justify-between py-2.5">
-              <div>
-                <div className="font-semibold">{m.user.name || m.user.email}</div>
-                <div className="text-[12.5px] text-ink-3">{m.user.email}</div>
+            <li key={m.id} className="flex items-center justify-between gap-2 py-2.5">
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-semibold">{m.user.name || m.user.email}</div>
+                <div className="truncate text-[12.5px] text-ink-3">{m.user.email}</div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2">
                 <RoleChip role={m.role} />
                 {canManage && m.role !== 'owner' && (
                   <button
@@ -96,14 +96,14 @@ export function MembersSection({ currentRole }: { currentRole: Role }) {
                 <li className="py-2 text-[13px] text-ink-3">None.</li>
               ) : (
                 (invites ?? []).map((inv) => (
-                  <li key={inv.id} className="flex items-center justify-between py-2.5">
-                    <div>
-                      <div className="font-semibold">{inv.email}</div>
+                  <li key={inv.id} className="flex items-center justify-between gap-2 py-2.5">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-semibold">{inv.email}</div>
                       <div className="text-[12.5px] text-ink-3">
                         Expires {new Date(inv.expiresAt).toLocaleDateString()}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-2">
                       <RoleChip role={inv.role} />
                       <button
                         onClick={async () => {
@@ -163,31 +163,33 @@ function InviteForm({ onCreated }: { onCreated: (token: string) => void }) {
   };
 
   return (
-    <form onSubmit={submit} className="mt-5 grid gap-3 sm:grid-cols-[1fr_140px_auto]">
+    <form onSubmit={submit} className="mt-5 grid gap-2">
       <input
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="teammate@example.com"
         required
-        className="rounded-[11px] border border-border-2 bg-surface-2 px-3 py-2.5 text-[14px] outline-none focus:border-accent"
+        className="w-full rounded-[11px] border border-border-2 bg-surface-2 px-3 py-2.5 text-[14px] outline-none focus:border-accent"
       />
-      <select
-        value={role}
-        onChange={(e) => setRole(e.target.value as Role)}
-        className="rounded-[11px] border border-border-2 bg-surface-2 px-3 py-2.5 text-[14px] outline-none focus:border-accent"
-      >
-        <option value="agent">Agent</option>
-        <option value="admin">Admin</option>
-        <option value="owner">Owner</option>
-      </select>
-      <button
-        type="submit"
-        disabled={busy || !email}
-        className="rounded-xl bg-accent px-4 py-2.5 font-display text-[14px] font-semibold text-white shadow-sm transition hover:brightness-110 disabled:opacity-50"
-      >
-        {busy ? 'Inviting…' : 'Invite'}
-      </button>
+      <div className="flex gap-2">
+        <select
+          value={role}
+          onChange={(e) => setRole(e.target.value as Role)}
+          className="min-w-0 flex-1 rounded-[11px] border border-border-2 bg-surface-2 px-3 py-2.5 text-[14px] outline-none focus:border-accent"
+        >
+          <option value="agent">Agent</option>
+          <option value="admin">Admin</option>
+          <option value="owner">Owner</option>
+        </select>
+        <button
+          type="submit"
+          disabled={busy || !email}
+          className="shrink-0 rounded-xl bg-accent px-4 py-2.5 font-display text-[14px] font-semibold text-white shadow-sm transition hover:brightness-110 disabled:opacity-50"
+        >
+          {busy ? 'Inviting…' : 'Invite'}
+        </button>
+      </div>
     </form>
   );
 }
@@ -203,7 +205,7 @@ function InviteLinkPreview({ token }: { token: string }) {
         Share this invite link
       </div>
       <div className="break-all font-mono text-[12.5px] text-ink">{url}</div>
-      <div className="mt-2 flex gap-2">
+      <div className="mt-2 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={async () => {

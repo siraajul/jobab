@@ -90,14 +90,14 @@ export function OrderPanel({
                         'repeating-linear-gradient(45deg, var(--surface-2) 0 9px, var(--surface-3) 9px 18px)',
                     }}
                   />
-                  <div className="flex flex-1 flex-col">
-                    <div className="text-[14.5px] font-semibold leading-tight">{meta.title}</div>
-                    <div className="text-[12.5px] text-ink-2">{meta.variant}</div>
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <div className="truncate text-[14.5px] font-semibold leading-tight">{meta.title}</div>
+                    <div className="truncate text-[12.5px] text-ink-2">{meta.variant}</div>
                     <div className="mt-1 text-[11.5px] text-ink-3">
                       {it.qty} × ৳{it.price.toLocaleString()}
                     </div>
                   </div>
-                  <div className="font-display text-[15px] font-semibold tabular-nums">
+                  <div className="shrink-0 font-display text-[15px] font-semibold tabular-nums">
                     ৳{(it.price * it.qty).toLocaleString()}
                   </div>
                 </li>
