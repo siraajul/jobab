@@ -74,7 +74,7 @@ export default function AcceptInvitePage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg px-6">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-bg px-4 py-8 sm:px-6">
       <form onSubmit={submit} className="w-full max-w-md overflow-hidden rounded-[20px] bg-surface shadow-lg">
         <div className="flex flex-col items-center gap-3 px-7 pt-8">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-white shadow-md">
