@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, NotFoundException, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   CsvSyncBodySchema,
+  SetVariantStockBodySchema,
   ShopifySyncBodySchema,
   WooSyncBodySchema,
 } from '@jobab/shared';
@@ -66,5 +67,30 @@ export class CatalogController {
   syncWoo(@OrgId() orgId: string, @Body() body: unknown) {
     const creds = WooSyncBodySchema.parse(body);
     return this.sync.sync(orgId, 'woocommerce', creds);
+  }
+
+  /**
+   * Update a single variant's on-hand stock. The merchant uses this to
+   * mark something out of stock or restock without re-uploading the whole
+   * catalog CSV. We guard the variant by walking up through its product
+   * to the org so users can't touch another tenant's inventory.
+   */
+  @Patch('variants/:id/stock')
+  @ApiOperation({ summary: "Update a variant's on-hand stock quantity" })
+  async setVariantStock(
+    @OrgId() orgId: string,
+    @Param('id') id: string,
+    @Body() body: unknown,
+  ) {
+    const { stockQty } = SetVariantStockBodySchema.parse(body);
+    const variant = await this.prisma.productVariant.findFirst({
+      where: { id, product: { organizationId: orgId } },
+      select: { id: true },
+    });
+    if (!variant) throw new NotFoundException('variant not found');
+    return this.prisma.productVariant.update({
+      where: { id },
+      data: { stockQty },
+    });
   }
 }
