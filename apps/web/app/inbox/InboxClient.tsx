@@ -7,7 +7,7 @@ import { useToast } from '@/components/shared/Toast';
 import { useTabBadge } from '@/lib/use-tab-badge';
 import { api } from '@/lib/api';
 import { MobileNav, type MobileView } from '@/components/inbox/MobileNav';
-import { OrderPanel } from '@/components/inbox/OrderPanel';
+import { RightRail } from '@/components/inbox/RightRail';
 import { EmptyState } from '@/components/shared/EmptyState';
 import type {
   ConversationDetail,
@@ -114,11 +114,16 @@ export function InboxClient({
       >
         <ConversationList
           counts={state.counts}
+          channelCounts={state.channelCounts}
+          members={state.members}
+          shopName={state.shopName}
           filtered={state.filtered}
           filter={state.filter}
           setFilter={state.setFilter}
           sort={state.sort}
           setSort={state.setSort}
+          channel={state.channel}
+          setChannel={state.setChannel}
           query={state.query}
           setQuery={state.setQuery}
           activeId={state.activeId}
@@ -137,9 +142,15 @@ export function InboxClient({
           <Thread
             active={state.active}
             aiDraft={state.aiDraft}
+            members={state.members}
+            palette={state.tags}
             onBack={() => setMobileView('list')}
             onTakeOver={state.takeOver}
             onHandBack={state.handBack}
+            onAssign={state.assign}
+            onAddTag={state.addTag}
+            onRemoveTag={state.removeTag}
+            onCreateTag={state.createTag}
             onSend={state.send}
             onPickCandidate={onPickCandidate}
             onOpenOrder={() => {
@@ -159,7 +170,14 @@ export function InboxClient({
 
       <aside className="hidden min-h-0 overflow-hidden bg-bg xl:block">
         {state.active ? (
-          <OrderPanel conversation={state.active} order={state.activeOrder} />
+          <RightRail
+            conversation={state.active}
+            order={state.activeOrder}
+            palette={state.tags}
+            onAddTag={state.addTag}
+            onRemoveTag={state.removeTag}
+            onCreateTag={state.createTag}
+          />
         ) : (
           <EmptyState title="No order yet" body="Select a conversation to see its live receipt." />
         )}
@@ -171,10 +189,17 @@ export function InboxClient({
           setOrderDrawer(false);
           if (mobileView === 'order') setMobileView('thread');
         }}
-        title="Live receipt"
+        title="Details"
       >
         {state.active ? (
-          <OrderPanel conversation={state.active} order={state.activeOrder} />
+          <RightRail
+            conversation={state.active}
+            order={state.activeOrder}
+            palette={state.tags}
+            onAddTag={state.addTag}
+            onRemoveTag={state.removeTag}
+            onCreateTag={state.createTag}
+          />
         ) : null}
       </Drawer>
 

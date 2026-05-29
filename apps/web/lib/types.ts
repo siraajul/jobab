@@ -6,6 +6,7 @@
  */
 export type {
   ConversationStatus,
+  HandoffCategory,
   MessageSender,
   MessageDirection,
   OrderStatus,
@@ -17,6 +18,12 @@ export type {
   Conversation,
   ConversationListItem,
   ConversationDetail,
+  ConversationActivityItem,
+  AgentRunToolCall,
+  Tag,
+  TagColor,
+  ConversationTag,
+  Note,
   Message,
   MessageAttachments,
   MatchCandidate,

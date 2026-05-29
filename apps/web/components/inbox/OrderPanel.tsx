@@ -44,9 +44,9 @@ export function OrderPanel({
   const orderNo = order.id.slice(-4).toUpperCase();
 
   return (
-    <div className="relative flex h-full flex-col px-5 py-6 animate-jb-slidein">
+    <div className="relative flex flex-col px-4 py-3 animate-jb-slidein">
       {/* Receipt body — paper card with perforated edges. */}
-      <div className="relative flex flex-1 flex-col overflow-hidden rounded-[18px] bg-surface shadow-md">
+      <div className="relative flex flex-col overflow-hidden rounded-[18px] bg-surface shadow-md">
         <PerforatedEdge direction="top" fill="var(--bg)" />
 
         {/* Header */}
@@ -71,7 +71,7 @@ export function OrderPanel({
         </div>
 
         {/* Items */}
-        <div className="flex-1 overflow-y-auto px-5 pt-4">
+        <div className="px-5 pt-4">
           <div className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-3">
             Items
           </div>

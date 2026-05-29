@@ -6,17 +6,28 @@ import { Composer } from '@/components/inbox/Composer';
 import { MessageBubble } from '@/components/inbox/MessageBubble';
 import { StatusPill } from '@/components/inbox/StatusPill';
 import { TakeoverToggle } from '@/components/inbox/TakeoverToggle';
+import { AssignMenu } from '@/components/inbox/AssignMenu';
+import { ChannelBadge, channelLabel } from '@/components/inbox/ChannelBadge';
+import { TagBar } from '@/components/inbox/TagBar';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { JamdaniMark } from '@/components/shared/Jamdani';
 import { usePrevious } from '@/lib/use-poll';
-import type { ConversationDetail } from '@/lib/types';
+import { handoffLabel, isProblemCategory } from '@/lib/handoff';
+import type { MemberRow } from '@/lib/api';
+import type { ConversationDetail, ConversationTag, Tag } from '@/lib/types';
 
 export function Thread({
   active,
   aiDraft,
+  members,
+  palette,
   onBack,
   onTakeOver,
   onHandBack,
+  onAssign,
+  onAddTag,
+  onRemoveTag,
+  onCreateTag,
   onSend,
   onPickCandidate,
   onOpenOrder,
@@ -24,9 +35,15 @@ export function Thread({
 }: {
   active: ConversationDetail;
   aiDraft: string | null;
+  members: MemberRow[];
+  palette: Tag[];
   onBack: () => void;
   onTakeOver: () => void;
   onHandBack: () => void;
+  onAssign: (userId: string | null) => void;
+  onAddTag: (tag: ConversationTag) => void;
+  onRemoveTag: (tagId: string) => void;
+  onCreateTag: (name: string, color: string) => void;
   onSend: (text: string) => Promise<void>;
   onPickCandidate: (productId: string) => void;
   onOpenOrder: () => void;
@@ -64,12 +81,24 @@ export function Thread({
     <>
       <ThreadHeader
         active={active}
+        members={members}
         onBack={onBack}
         onTakeOver={onTakeOver}
         onHandBack={onHandBack}
+        onAssign={onAssign}
         customerView={customerView}
         onToggleCustomerView={() => setCustomerView((v) => !v)}
       />
+
+      <TagBar
+        tags={active.tags ?? []}
+        palette={palette}
+        onAdd={onAddTag}
+        onRemove={onRemoveTag}
+        onCreate={onCreateTag}
+      />
+
+      {active.handoffCategory && <HandoffBanner active={active} />}
 
       <div
         ref={messagesRef}
@@ -134,16 +163,20 @@ function stripInternalTags(text: string): string {
 
 function ThreadHeader({
   active,
+  members,
   onBack,
   onTakeOver,
   onHandBack,
+  onAssign,
   customerView,
   onToggleCustomerView,
 }: {
   active: ConversationDetail;
+  members: MemberRow[];
   onBack: () => void;
   onTakeOver: () => void;
   onHandBack: () => void;
+  onAssign: (userId: string | null) => void;
   customerView: boolean;
   onToggleCustomerView: () => void;
 }) {
@@ -168,9 +201,17 @@ function ThreadHeader({
             </div>
             <JamdaniMark size={10} className="shrink-0 text-ink-3" />
           </div>
-          <div className="truncate text-[10.5px] uppercase tracking-[0.14em] text-ink-3 sm:text-[12px]">
-            Facebook · Rongdhonu Boutique
+          <div className="flex items-center gap-1.5 text-[10.5px] uppercase tracking-[0.14em] text-ink-3 sm:text-[12px]">
+            <ChannelBadge platform={active.page?.platform} size={14} />
+            <span className="truncate">{channelLabel(active.page?.platform)}</span>
           </div>
+        </div>
+        <div className="hidden lg:block">
+          <AssignMenu
+            members={members}
+            assignedUserId={active.assignedUserId}
+            onAssign={onAssign}
+          />
         </div>
         <StatusPill status={active.status} pulse={active.status === 'bot'} />
         {/* Customer-view toggle — only renders where there's space (≥ lg).
@@ -200,11 +241,18 @@ function ThreadHeader({
       {/* Secondary action row — mobile + tablet: take-over toggle, plus the
           customer-view chip when the header above couldn't fit it. */}
       <div className="flex items-center justify-between gap-2 border-b border-border bg-surface px-3 pb-3 md:hidden">
-        <TakeoverToggle
-          status={active.status}
-          onTakeOver={onTakeOver}
-          onHandBack={onHandBack}
-        />
+        <div className="flex items-center gap-2">
+          <TakeoverToggle
+            status={active.status}
+            onTakeOver={onTakeOver}
+            onHandBack={onHandBack}
+          />
+          <AssignMenu
+            members={members}
+            assignedUserId={active.assignedUserId}
+            onAssign={onAssign}
+          />
+        </div>
         <button
           type="button"
           onClick={onToggleCustomerView}
@@ -222,6 +270,11 @@ function ThreadHeader({
       {/* On md..lg (no space in header, no mobile row) we still need the
           customer-view chip somewhere. */}
       <div className="hidden items-center justify-end gap-2 border-b border-border bg-surface px-6 pb-3 md:flex lg:hidden">
+        <AssignMenu
+          members={members}
+          assignedUserId={active.assignedUserId}
+          onAssign={onAssign}
+        />
         <button
           type="button"
           onClick={onToggleCustomerView}
@@ -237,6 +290,31 @@ function ThreadHeader({
         </button>
       </div>
     </>
+  );
+}
+
+/** A banner flagging why the AI handed this conversation off, so the merchant
+ *  can follow up without scrolling the thread. Red for customer problems
+ *  (complaint/refund/payment), amber for the softer reasons. */
+function HandoffBanner({ active }: { active: ConversationDetail }) {
+  const problem = isProblemCategory(active.handoffCategory);
+  return (
+    <div
+      className={
+        'flex items-start gap-2 border-b px-3 py-2 text-[12.5px] sm:px-6 ' +
+        (problem
+          ? 'border-red/30 bg-red-bg text-red'
+          : 'border-amber/30 bg-amber-bg text-amber')
+      }
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="mt-0.5 shrink-0" aria-hidden>
+        <path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+      </svg>
+      <div className="min-w-0">
+        <span className="font-bold uppercase tracking-wider">{handoffLabel(active.handoffCategory)}</span>
+        {active.handoffReason && <span className="text-ink-2"> — {active.handoffReason}</span>}
+      </div>
+    </div>
   );
 }
 
