@@ -111,7 +111,7 @@ function CommentCard({ comment: c }: { comment: CommentRow }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-display text-[14.5px] font-semibold tracking-display">
+            <span className="max-w-full truncate font-display text-[14.5px] font-semibold tracking-display">
               {c.commenterName ?? 'Commenter'}
             </span>
             <IntentChip intent={c.intent} confidence={c.intentConfidence} />
@@ -209,7 +209,7 @@ function RulesPanel({
       </p>
       <div className="mt-3 space-y-3">
         {rules.map((r) => (
-          <div key={r.intent} className="grid gap-2 rounded-xl bg-surface-2 p-3 text-[13px] sm:grid-cols-[80px_120px_1fr_120px]">
+          <div key={r.intent} className="grid grid-cols-1 gap-2 rounded-xl bg-surface-2 p-3 text-[13px] sm:grid-cols-[80px_120px_1fr_120px] sm:items-center">
             <div className="font-bold uppercase tracking-[0.14em] text-ink">{r.intent}</div>
             <select
               value={r.replyMode}
