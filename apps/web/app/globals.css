@@ -71,10 +71,340 @@ body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
    Print — when the merchant prints an order receipt, hide the
    app chrome and force a clean white page.
    ============================================================ */
+/* On screen the printable invoice block is hidden via visibility (set in the
+   @media print block below). We don't use `display: none` because the print
+   stylesheet needs the element to be in the layout tree so we can flip it on
+   alongside its hidden ancestors. */
+.invoice-print { position: absolute; left: -10000px; top: 0; pointer-events: none; }
+
 @media print {
-  html, body { background: #fff !important; color: #000 !important; }
-  nav, aside, .no-print { display: none !important; }
-  article { break-inside: avoid; box-shadow: none !important; border: 1px solid #ddd !important; }
+  /* `margin: 0` is the trick that stops Chrome/Safari from auto-injecting the
+     date + page-title header at the top and URL/page-number at the bottom of
+     every printed page. We then add internal padding on .invoice-page below
+     so the content still has breathing room from the paper edge. */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  html, body {
+    background: #fff !important;
+    color: #2A2722 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  /* Force browsers to honour our background and text colours instead of
+     stripping them to save toner — without this the emerald total block,
+     status pills, and Jamdani lattice would all render as plain black. */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  /* Visibility (unlike display) lets a visible descendant punch through a
+     hidden ancestor — so we hide everything, then reveal only the invoice. */
+  body * { visibility: hidden !important; }
+  .invoice-print, .invoice-print * { visibility: visible !important; }
+  /* Lift the invoice out of the dashboard's scroll container so it spans the
+     printed page instead of sitting behind app chrome that's clipping it. */
+  .invoice-print {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    pointer-events: none;
+    background: #fff;
+    color: #2A2722;
+    font-family: 'Hind Siliguri', system-ui, sans-serif;
+  }
+
+  /* ─── Watermark behind the page content ─────────────────────────────── */
+  .invoice-watermark {
+    position: absolute;
+    top: 38%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-18deg);
+    font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+    font-size: 140pt;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #1F6E47;
+    opacity: 0.04;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .invoice-page {
+    position: relative;
+    z-index: 1;
+    padding: 14mm 14mm 12mm;
+    max-width: 100%;
+    font-size: 11.5pt;
+    line-height: 1.5;
+  }
+
+  /* ─── Decorative bands ─────────────────────────────────────────────── */
+  .invoice-band {
+    display: block;
+    width: 100%;
+    height: 14px;
+  }
+  .invoice-band-top { margin: 0 0 18px; }
+  .invoice-band-bottom { margin: 22px 0 12px; }
+
+  /* ─── Header ───────────────────────────────────────────────────────── */
+  .invoice-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 18px;
+  }
+  .invoice-brand {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .invoice-mark { flex-shrink: 0; margin-top: 4px; }
+  .invoice-shop {
+    font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+    font-size: 26pt;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.0;
+    color: #1F6E47;
+  }
+  .invoice-sub {
+    margin-top: 6px;
+    font-size: 8.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: #6C645A;
+    font-weight: 600;
+  }
+  .invoice-meta { text-align: right; }
+  .invoice-no-label {
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: #6C645A;
+    font-weight: 700;
+  }
+  .invoice-no {
+    margin-top: 2px;
+    font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 16pt;
+    color: #2A2722;
+    letter-spacing: 0.04em;
+  }
+  .invoice-date {
+    margin-top: 6px;
+    font-size: 9.5pt;
+    color: #6C645A;
+    line-height: 1.35;
+  }
+
+  /* ─── Bill-to / status cards ───────────────────────────────────────── */
+  .invoice-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .invoice-card {
+    background: #FAF7F2;
+    border: 1px solid #EBE4D7;
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .invoice-label {
+    font-size: 8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: #6C645A;
+  }
+  .invoice-name {
+    margin-top: 6px;
+    font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 13.5pt;
+    color: #2A2722;
+  }
+  .invoice-customer-line {
+    margin-top: 2px;
+    font-size: 10.5pt;
+    color: #2A2722;
+  }
+  .invoice-address { color: #6C645A; }
+  .invoice-status {
+    margin-top: 6px;
+    font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 14pt;
+    letter-spacing: 0.06em;
+    color: #2A2722;
+  }
+  .invoice-payment {
+    margin-top: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 8.5pt;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  .invoice-payment-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+  .invoice-payment-paid    { background: #E4EFE6; color: #2E7D4F; }
+  .invoice-payment-pending { background: #F6EDD6; color: #9A6B0E; }
+  .invoice-payment-failed  { background: #F5E2DD; color: #AE3A2C; }
+
+  /* ─── Items section ────────────────────────────────────────────────── */
+  .invoice-section-title {
+    font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+    font-size: 9pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.24em;
+    color: #1F6E47;
+    margin: 4px 0 8px;
+  }
+  .invoice-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10.5pt;
+  }
+  .invoice-table thead th {
+    text-align: left;
+    font-size: 8.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: #6C645A;
+    border-bottom: 2px solid #1F6E47;
+    padding: 9px 8px;
+  }
+  .invoice-table tbody td {
+    padding: 12px 8px;
+    border-bottom: 1px solid #EBE4D7;
+    vertical-align: top;
+  }
+  .invoice-table tbody tr:last-child td { border-bottom: none; }
+  .invoice-item-title {
+    font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+    font-weight: 600;
+    color: #2A2722;
+  }
+  .invoice-item-variant {
+    font-size: 10pt;
+    color: #6C645A;
+  }
+
+  /* ─── Totals — hero emerald block ──────────────────────────────────── */
+  .invoice-totals-wrap {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 14px;
+  }
+  .invoice-totals {
+    width: 300px;
+    border: 1px solid #EBE4D7;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .invoice-totals-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 14px;
+    font-size: 10.5pt;
+    color: #2A2722;
+  }
+  .invoice-totals-row + .invoice-totals-row { border-top: 1px dashed #EBE4D7; }
+  .invoice-totals-grand {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #1F6E47;
+    color: #FFFFFF;
+    padding: 14px 16px;
+    font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-size: 10pt;
+  }
+  .invoice-totals-grand-amount {
+    font-size: 18pt;
+    letter-spacing: -0.01em;
+    text-transform: none;
+  }
+
+  /* ─── Payment link block ───────────────────────────────────────────── */
+  .invoice-pay-link {
+    margin-top: 22px;
+    padding: 14px 16px;
+    border: 1.5px dashed #1F6E47;
+    border-radius: 10px;
+    background: #F4F9F5;
+  }
+  .invoice-pay-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .invoice-pay-instructions {
+    font-size: 9pt;
+    color: #6C645A;
+    font-style: italic;
+  }
+  .invoice-pay-url {
+    margin-top: 8px;
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 10pt;
+    word-break: break-all;
+    color: #1F6E47;
+    font-weight: 600;
+  }
+
+  /* ─── Footer ───────────────────────────────────────────────────────── */
+  .invoice-footer {
+    margin-top: 26px;
+  }
+  .invoice-thanks {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #EBE4D7;
+    text-align: center;
+  }
+  .invoice-thanks-line {
+    font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+    font-size: 11.5pt;
+    font-weight: 600;
+    color: #2A2722;
+  }
+  .invoice-thanks-sub {
+    margin-top: 2px;
+    font-size: 9.5pt;
+    color: #6C645A;
+  }
+  .invoice-fineprint {
+    margin-top: 10px;
+    font-size: 8pt;
+    letter-spacing: 0.1em;
+    color: #9B9285;
+    text-align: center;
+  }
 }
 
 /* Scrollbar — matches the prototype */
