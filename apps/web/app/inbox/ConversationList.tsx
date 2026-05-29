@@ -71,7 +71,7 @@ export function ConversationList({
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-2 px-4 sm:px-5 pb-1">
+      <div className="flex items-center justify-between gap-2 px-4 pb-1 sm:px-5">
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value as Sort)}
@@ -79,11 +79,13 @@ export function ConversationList({
           aria-label="Sort conversations"
         >
           {SORTS.map((s) => (
-            <option key={s.key} value={s.key}>{s.label}</option>
+            <option key={s.key} value={s.key}>
+              {s.label}
+            </option>
           ))}
         </select>
-        <span className="text-[11px] uppercase tracking-[0.16em] text-ink-3 hidden sm:inline">
-          j/k navigate · enter open
+        <span className="hidden text-[10.5px] uppercase tracking-[0.16em] text-ink-3 xl:inline">
+          j/k · enter · ⌘/
         </span>
       </div>
 
