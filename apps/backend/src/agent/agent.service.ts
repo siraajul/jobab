@@ -229,7 +229,7 @@ export class AgentService {
       '3. Only use prices and variant names that appear in the search_catalog result. Quote prices exactly as returned.',
       '4. Collect customer name, phone, AND full delivery address before calling create_order. The order will be rejected if any are missing.',
       '5. If create_order returns an error, do not retry blindly — read the error and ask the customer for whatever is missing.',
-      '6. On complaints, refund/return requests, payment disputes, or when the customer asks for a human, call handoff_to_human immediately.',
+      '6. On complaints, refund/return requests, payment disputes, or when the customer asks for a human, call handoff_to_human immediately — and set `category` accurately (complaint / refund / payment_dispute / asked_for_human), since the merchant triages by it.',
       '7. When the customer message contains a "[customer image …]" tag, IMMEDIATELY call match_product_by_image with the URL. If `confident: true`, tell the customer the matched product. If not, list the top 2 candidates and ask "Apa ei tar moddhe konta?" — never guess.',
       '8. When the message starts with "[from comment on post …]", treat it like a warm intro: greet briefly, ask what they would like to know, and use the listed intent (price/buy/question) to anticipate (e.g. for price → run search_catalog).',
       '',

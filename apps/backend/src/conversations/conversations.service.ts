@@ -12,16 +12,18 @@ export class ConversationsService {
     private readonly queue: AgentQueueService,
   ) {}
 
-  list(organizationId: string) {
-    return this.prisma.conversation.findMany({
+  async list(organizationId: string) {
+    const rows = await this.prisma.conversation.findMany({
       where: { organizationId },
       orderBy: { lastCustomerMessageAt: 'desc' },
       take: 100,
       include: {
         page: { select: { id: true, externalPageId: true, platform: true } },
         messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+        tags: { include: { tag: { select: { id: true, name: true, color: true } } } },
       },
     });
+    return rows.map(flattenTags);
   }
 
   async detail(organizationId: string, id: string) {
@@ -31,10 +33,72 @@ export class ConversationsService {
         page: true,
         messages: { orderBy: { createdAt: 'asc' }, take: 200 },
         orders: { orderBy: { createdAt: 'desc' }, take: 1 },
+        tags: { include: { tag: { select: { id: true, name: true, color: true } } } },
       },
     });
     if (!conv) throw new NotFoundException();
-    return conv;
+    return flattenTags(conv);
+  }
+
+  // Apply an existing org tag to a conversation. Idempotent.
+  async addTag(organizationId: string, conversationId: string, tagId: string) {
+    await this.requireOwn(organizationId, conversationId);
+    const tag = await this.prisma.tag.findFirst({
+      where: { id: tagId, organizationId },
+    });
+    if (!tag) throw new NotFoundException('tag not found');
+    await this.prisma.conversationTag.upsert({
+      where: { conversationId_tagId: { conversationId, tagId } },
+      create: { conversationId, tagId },
+      update: {},
+    });
+    return { ok: true };
+  }
+
+  async removeTag(organizationId: string, conversationId: string, tagId: string) {
+    await this.requireOwn(organizationId, conversationId);
+    await this.prisma.conversationTag.deleteMany({ where: { conversationId, tagId } });
+    return { ok: true };
+  }
+
+  async listNotes(organizationId: string, conversationId: string) {
+    await this.requireOwn(organizationId, conversationId);
+    const rows = await this.prisma.note.findMany({
+      where: { conversationId },
+      orderBy: { createdAt: 'desc' },
+      include: { author: { select: { name: true, email: true } } },
+    });
+    return rows.map((n) => ({
+      id: n.id,
+      body: n.body,
+      authorName: n.author?.name ?? n.author?.email ?? null,
+      createdAt: n.createdAt,
+    }));
+  }
+
+  async addNote(
+    organizationId: string,
+    conversationId: string,
+    authorUserId: string,
+    body: string,
+  ) {
+    await this.requireOwn(organizationId, conversationId);
+    const n = await this.prisma.note.create({
+      data: { organizationId, conversationId, authorUserId, body },
+      include: { author: { select: { name: true, email: true } } },
+    });
+    return {
+      id: n.id,
+      body: n.body,
+      authorName: n.author?.name ?? n.author?.email ?? null,
+      createdAt: n.createdAt,
+    };
+  }
+
+  async deleteNote(organizationId: string, conversationId: string, noteId: string) {
+    await this.requireOwn(organizationId, conversationId);
+    await this.prisma.note.deleteMany({ where: { id: noteId, conversationId } });
+    return { ok: true };
   }
 
   /** Older messages, paginated by createdAt cursor. Used by mobile thread
@@ -50,6 +114,27 @@ export class ConversationsService {
       where: { conversationId: id, createdAt: { lt: new Date(beforeIso) } },
       orderBy: { createdAt: 'desc' },
       take: Math.min(limit, 200),
+    });
+  }
+
+  /** AI agent runs for a conversation, newest first — powers the dashboard
+   *  activity feed (which tools the AI fired, token spend, latency). */
+  async activity(organizationId: string, id: string, limit = 50) {
+    await this.requireOwn(organizationId, id);
+    return this.prisma.agentRun.findMany({
+      where: { conversationId: id },
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(limit, 200),
+      select: {
+        id: true,
+        model: true,
+        inputTokens: true,
+        outputTokens: true,
+        costUsd: true,
+        latencyMs: true,
+        toolCalls: true,
+        createdAt: true,
+      },
     });
   }
 
@@ -117,4 +202,10 @@ export class ConversationsService {
     const exists = await this.prisma.conversation.count({ where: { id, organizationId } });
     if (!exists) throw new NotFoundException();
   }
+}
+
+/** Collapse the `ConversationTag` join rows into a flat `tags` array of the
+ *  labels themselves — the shape the dashboard consumes. */
+function flattenTags<T extends { tags: Array<{ tag: unknown }> }>(conv: T) {
+  return { ...conv, tags: conv.tags.map((ct) => ct.tag) };
 }

@@ -107,9 +107,16 @@ describe('handoff_to_human tool', () => {
       } as never,
       whatsapp: whatsapp as never,
     });
-    const r = await handoffToHumanTool.execute({ reason: 'complaint' }, c);
-    expect(r).toMatchObject({ ok: true, reason: 'complaint' });
+    const r = await handoffToHumanTool.execute(
+      { category: 'complaint', reason: 'damaged item' },
+      c,
+    );
+    expect(r).toMatchObject({ ok: true, category: 'complaint', reason: 'damaged item' });
     expect(updates).toHaveLength(1);
+    // The category + reason are persisted on the conversation for triage.
+    expect(updates[0]).toMatchObject({
+      data: { status: 'needs_human', handoffCategory: 'complaint', handoffReason: 'damaged item' },
+    });
     expect(whatsapp.notifyOrg).toHaveBeenCalledTimes(1);
     const [, message] = whatsapp.notifyOrg.mock.calls[0] as unknown as [string, string];
     expect(message).toMatch(/Tahmina/);

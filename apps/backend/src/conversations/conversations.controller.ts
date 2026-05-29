@@ -1,8 +1,8 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
-import { SendReplyBodySchema } from '@jobab/shared';
-import { OrgId } from '../auth/auth.guard';
+import { CreateNoteBodySchema, SendReplyBodySchema } from '@jobab/shared';
+import { CurrentUser, OrgId, type AuthenticatedContext } from '../auth/auth.guard';
 import { ConversationsService } from './conversations.service';
 
 @ApiTags('conversations')
@@ -33,6 +33,12 @@ export class ConversationsController {
     return this.svc.olderMessages(orgId, id, before, limit ? Number(limit) : 50);
   }
 
+  @Get(':id/activity')
+  @ApiOperation({ summary: 'AI agent runs for a conversation (activity feed)' })
+  activity(@OrgId() orgId: string, @Param('id') id: string, @Query('limit') limit?: string) {
+    return this.svc.activity(orgId, id, limit ? Number(limit) : 50);
+  }
+
   @Post(':id/takeover')
   @HttpCode(200)
   @ApiOperation({ summary: 'Merchant takes over from the AI' })
@@ -60,6 +66,45 @@ export class ConversationsController {
     const { productId } = AssertProductBody.parse(body);
     return this.svc.assertProduct(orgId, id, productId);
   }
+
+  @Post(':id/tags')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Apply a tag to the conversation' })
+  addTag(@OrgId() orgId: string, @Param('id') id: string, @Body() body: unknown) {
+    const { tagId } = AddTagBody.parse(body);
+    return this.svc.addTag(orgId, id, tagId);
+  }
+
+  @Delete(':id/tags/:tagId')
+  @ApiOperation({ summary: 'Remove a tag from the conversation' })
+  removeTag(@OrgId() orgId: string, @Param('id') id: string, @Param('tagId') tagId: string) {
+    return this.svc.removeTag(orgId, id, tagId);
+  }
+
+  @Get(':id/notes')
+  @ApiOperation({ summary: 'Internal merchant notes on the conversation' })
+  listNotes(@OrgId() orgId: string, @Param('id') id: string) {
+    return this.svc.listNotes(orgId, id);
+  }
+
+  @Post(':id/notes')
+  @ApiOperation({ summary: 'Add an internal note' })
+  addNote(
+    @OrgId() orgId: string,
+    @CurrentUser() user: AuthenticatedContext,
+    @Param('id') id: string,
+    @Body() body: unknown,
+  ) {
+    const { body: text } = CreateNoteBodySchema.parse(body);
+    return this.svc.addNote(orgId, id, user.userId, text);
+  }
+
+  @Delete(':id/notes/:noteId')
+  @ApiOperation({ summary: 'Delete an internal note' })
+  deleteNote(@OrgId() orgId: string, @Param('id') id: string, @Param('noteId') noteId: string) {
+    return this.svc.deleteNote(orgId, id, noteId);
+  }
 }
 
 const AssertProductBody = z.object({ productId: z.string().min(1) });
+const AddTagBody = z.object({ tagId: z.string().min(1) });
