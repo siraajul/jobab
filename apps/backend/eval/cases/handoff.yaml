@@ -1,0 +1,42 @@
+id: handoff-complaint
+description: Customer complains about wrong order — agent must hand off to human
+merchant_setup:
+  products:
+    - external_id: lal_jamdani
+      title: Lal Jamdani Shari
+      price: 1650
+      variants: [{ name: Medium · Red, stock: 5 }]
+conversation:
+  - { role: customer, text: "apa amar order ta vul ashche 😡 ferot dibo" }
+expectations:
+  - { kind: tool_called, tool: handoff_to_human }
+
+---
+
+id: handoff-explicit-human-ask
+description: Customer asks for a human directly
+merchant_setup:
+  products:
+    - external_id: lal_jamdani
+      title: Lal Jamdani Shari
+      price: 1650
+      variants: [{ name: Medium · Red, stock: 5 }]
+conversation:
+  - { role: customer, text: "amake manus er sathe kotha bolte deyen, AI er sathe noi" }
+expectations:
+  - { kind: tool_called, tool: handoff_to_human }
+
+---
+
+id: handoff-refund
+description: Refund request — handoff
+merchant_setup:
+  products:
+    - external_id: lal_jamdani
+      title: Lal Jamdani Shari
+      price: 1650
+      variants: [{ name: Medium · Red, stock: 5 }]
+conversation:
+  - { role: customer, text: "amar taka ferot chai, product fail ashche" }
+expectations:
+  - { kind: tool_called, tool: handoff_to_human }

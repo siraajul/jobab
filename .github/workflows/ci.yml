@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-typecheck-test:
+    name: Lint · Typecheck · Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: jobab
+          POSTGRES_PASSWORD: jobab
+          POSTGRES_DB: jobab
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd="pg_isready -U jobab"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+
+    env:
+      DATABASE_URL: postgresql://jobab:jobab@localhost:5432/jobab
+      REDIS_URL: redis://localhost:6379
+      META_APP_SECRET: ci-secret
+      META_VERIFY_TOKEN: ci-verify
+      LLM_API_KEY: ci-llm-key
+      ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY || 'a-very-long-static-encryption-key-for-ci' }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @jobab/backend prisma:generate
+
+      - name: Build shared package
+        run: pnpm --filter @jobab/shared build
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm -r --filter=./apps/* lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Apply migrations
+        run: pnpm --filter @jobab/backend prisma:deploy
+
+      - name: Test
+        run: pnpm test

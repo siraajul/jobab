@@ -1,0 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Themes — port of /app.css §THEMES. Tailwind reads these via
+   color: var(--…) bindings in tailwind.config.ts.
+   ============================================================ */
+.theme-light {
+  --bg: #FAF7F2;
+  --surface: #FFFFFF;
+  --surface-2: #F4EFE6;
+  --surface-3: #ECE5D8;
+  --ink: #2A2722;
+  --ink-2: #6C645A;
+  --ink-3: #9B9285;
+  --border: #EBE4D7;
+  --border-2: #DDD4C4;
+  --accent: #1F6E47;
+  --on-accent: #FFFFFF;
+  --amber: #9A6B0E;
+  --amber-bg: #F6EDD6;
+  --red: #AE3A2C;
+  --red-bg: #F5E2DD;
+  --paid: #2E7D4F;
+  --paid-bg: #E4EFE6;
+  --you: #3C4A86;
+  --you-bg: #E7E9F4;
+  --shadow-sm: 0 1px 2px rgba(60,45,25,.05), 0 1px 3px rgba(60,45,25,.05);
+  --shadow-md: 0 2px 6px rgba(60,45,25,.06), 0 10px 28px rgba(60,45,25,.07);
+  --shadow-lg: 0 8px 24px rgba(60,45,25,.10), 0 24px 60px rgba(60,45,25,.10);
+  --accent-soft: color-mix(in oklab, var(--accent) 12%, var(--surface));
+  --accent-line: color-mix(in oklab, var(--accent) 26%, var(--surface));
+  --accent-ink:  color-mix(in oklab, var(--accent) 82%, #000);
+}
+
+.theme-dark {
+  --bg: #16130F;
+  --surface: #211D17;
+  --surface-2: #2A251E;
+  --surface-3: #342E25;
+  --ink: #F1ECE2;
+  --ink-2: #B0A698;
+  --ink-3: #7F7768;
+  --border: #322C24;
+  --border-2: #403930;
+  --accent: #1F6E47;
+  --on-accent: #FFFFFF;
+  --amber: #E0AF4E;
+  --amber-bg: #34291296;
+  --red: #E08A78;
+  --red-bg: #3A201996;
+  --paid: #6FC18C;
+  --paid-bg: #1E2E2196;
+  --you: #A9B4E8;
+  --you-bg: #23253296;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-md: 0 2px 8px rgba(0,0,0,.35), 0 12px 30px rgba(0,0,0,.35);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,.45), 0 30px 70px rgba(0,0,0,.5);
+  --accent-soft: color-mix(in oklab, var(--accent) 30%, var(--surface));
+  --accent-line: color-mix(in oklab, var(--accent) 46%, var(--surface));
+  --accent-ink:  color-mix(in oklab, var(--accent) 50%, #fff);
+}
+
+html, body { background: var(--bg); color: var(--ink); }
+body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
+
+/* ============================================================
+   Print — when the merchant prints an order receipt, hide the
+   app chrome and force a clean white page.
+   ============================================================ */
+@media print {
+  html, body { background: #fff !important; color: #000 !important; }
+  nav, aside, .no-print { display: none !important; }
+  article { break-inside: avoid; box-shadow: none !important; border: 1px solid #ddd !important; }
+}
+
+/* Scrollbar — matches the prototype */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--ink-3) 40%, transparent);
+  border-radius: 10px; border: 3px solid transparent; background-clip: padding-box;
+}

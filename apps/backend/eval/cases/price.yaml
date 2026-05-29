@@ -1,0 +1,53 @@
+id: price-001
+description: Customer asks price in Banglish — agent must search catalog and quote real price
+merchant_setup:
+  products:
+    - external_id: lal_jamdani
+      title: Lal Jamdani Shari
+      description: red cotton handloom shari with gold zari border
+      price: 1650
+      variants:
+        - { name: Medium · Red, stock: 5 }
+        - { name: Large · Red, stock: 2 }
+conversation:
+  - { role: customer, text: "lal jamdani shari koto?" }
+expectations:
+  - { kind: tool_called, tool: search_catalog }
+  - { kind: reply_contains, all: ["1650"] }
+  - { kind: reply_excludes, any: ["[stub", "i don't know", "i'm not sure"] }
+  - { kind: language, must_be_one_of: [bangla, banglish] }
+
+---
+
+id: price-002
+description: Bangla price ask — দাম কত
+merchant_setup:
+  products:
+    - external_id: karchupi_3pc
+      title: Karchupi Three-Piece
+      price: 1850
+      variants:
+        - { name: Large · Teal, stock: 3 }
+conversation:
+  - { role: customer, text: "এই কারচুপি থ্রি-পিসের দাম কত?" }
+expectations:
+  - { kind: tool_called, tool: search_catalog }
+  - { kind: reply_contains, all: ["1850"] }
+  - { kind: language, must_be_one_of: [bangla, banglish] }
+
+---
+
+id: price-003
+description: Mixed Bangla + English price ask with size mention
+merchant_setup:
+  products:
+    - external_id: cotton_kurti
+      title: Cotton Kurti
+      price: 990
+      variants:
+        - { name: Medium · Mustard, stock: 8 }
+conversation:
+  - { role: customer, text: "apa medium cotton kurti available? price please" }
+expectations:
+  - { kind: tool_called, tool: search_catalog }
+  - { kind: reply_contains, all: ["990"] }

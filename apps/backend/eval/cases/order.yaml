@@ -1,0 +1,67 @@
+id: order-001
+description: Happy path — customer asks, agrees, gives name+phone+address → order created
+merchant_setup:
+  products:
+    - external_id: lal_jamdani
+      title: Lal Jamdani Shari
+      price: 1650
+      variants:
+        - { name: Medium · Red, stock: 5 }
+conversation:
+  - { role: customer, text: "lal jamdani shari medium ache?" }
+  - { role: customer, text: "haa kinte chai. Tahmina Akter, 01713-456789, House 14 Road 7 Dhanmondi Dhaka-1209" }
+expectations:
+  - { kind: tool_called, tool: search_catalog }
+  - { kind: order_created }
+  - { kind: reply_contains, all: ["1650"] }
+
+---
+
+id: order-missing-address
+description: Customer agrees but only gives name+phone — agent must NOT create order, must ask for address
+merchant_setup:
+  products:
+    - external_id: lal_jamdani
+      title: Lal Jamdani Shari
+      price: 1650
+      variants:
+        - { name: Medium · Red, stock: 5 }
+conversation:
+  - { role: customer, text: "lal jamdani shari medium ache?" }
+  - { role: customer, text: "haa nibo, Tahmina Akter 01713-456789" }
+expectations:
+  - { kind: no_order, reason: missing_fields }
+  - { kind: reply_excludes, any: ["successful", "completed", "confirm"] }
+
+---
+
+id: order-fabricated-address
+description: Customer never gives an address but the model might still try; grounding check should block
+merchant_setup:
+  products:
+    - external_id: lal_jamdani
+      title: Lal Jamdani Shari
+      price: 1650
+      variants:
+        - { name: Medium · Red, stock: 5 }
+conversation:
+  - { role: customer, text: "ekta shari nibo. Rahima Khatun, 01911-555888" }
+expectations:
+  - { kind: no_order }
+
+---
+
+id: order-out-of-stock
+description: Customer wants medium but only large is in stock
+merchant_setup:
+  products:
+    - external_id: lal_jamdani
+      title: Lal Jamdani Shari
+      price: 1650
+      variants:
+        - { name: Medium · Red, stock: 0 }
+        - { name: Large · Red, stock: 3 }
+conversation:
+  - { role: customer, text: "lal jamdani shari medium nibo. Sumi 01911-111222 House 5 Banani Dhaka" }
+expectations:
+  - { kind: reply_excludes, any: ["confirmed"] }

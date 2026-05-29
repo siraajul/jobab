@@ -1,0 +1,30 @@
+id: empty-search
+description: Customer asks about something we don't sell — agent must NOT invent
+merchant_setup:
+  products:
+    - external_id: lal_jamdani
+      title: Lal Jamdani Shari
+      price: 1650
+      variants: [{ name: Medium · Red, stock: 5 }]
+conversation:
+  - { role: customer, text: "apa, leather jacket ache?" }
+expectations:
+  - { kind: tool_called, tool: search_catalog }
+  - { kind: no_order }
+  - { kind: reply_excludes, any: ["leather jacket"] }
+
+---
+
+id: ambiguous-question
+description: Vague greeting — agent shouldn't search catalog, should ask
+merchant_setup:
+  products:
+    - external_id: lal_jamdani
+      title: Lal Jamdani Shari
+      price: 1650
+      variants: [{ name: Medium · Red, stock: 5 }]
+conversation:
+  - { role: customer, text: "salam apa 🌸" }
+expectations:
+  - { kind: no_order }
+  - { kind: reply_excludes, any: ["1650", "[stub"] }

@@ -1,0 +1,349 @@
+/* ============================================================
+   Jobab — AI Sales Agent (merchant app)
+   Design tokens + components. Warm paper / late-night dark.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap');
+
+/* ---- reset-ish inside .jobab only ---- */
+.jobab, .jobab * { box-sizing: border-box; }
+.jobab {
+  font-family: 'Hind Siliguri', system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  line-height: 1.45;
+  height: 100%;
+}
+.jobab .display { font-family: 'Bricolage Grotesque', 'Hind Siliguri', sans-serif; letter-spacing: -0.02em; }
+
+/* ============================================================
+   THEMES
+   ============================================================ */
+.theme-light {
+  --bg:        #FAF7F2;
+  --surface:   #FFFFFF;
+  --surface-2: #F4EFE6;
+  --surface-3: #ECE5D8;
+  --ink:       #2A2722;
+  --ink-2:     #6C645A;
+  --ink-3:     #9B9285;
+  --border:    #EBE4D7;
+  --border-2:  #DDD4C4;
+  --accent:    #1F6E47;       /* overridable via tweak */
+  --on-accent: #FFFFFF;
+  --amber:     #9A6B0E;
+  --amber-bg:  #F6EDD6;
+  --red:       #AE3A2C;
+  --red-bg:    #F5E2DD;
+  --paid:      #2E7D4F;
+  --paid-bg:   #E4EFE6;
+  --you:       #3C4A86;       /* human/merchant tone */
+  --you-bg:    #E7E9F4;
+  --shadow-sm: 0 1px 2px rgba(60,45,25,.05), 0 1px 3px rgba(60,45,25,.05);
+  --shadow-md: 0 2px 6px rgba(60,45,25,.06), 0 10px 28px rgba(60,45,25,.07);
+  --shadow-lg: 0 8px 24px rgba(60,45,25,.10), 0 24px 60px rgba(60,45,25,.10);
+
+  --accent-soft: color-mix(in oklab, var(--accent) 12%, var(--surface));
+  --accent-line: color-mix(in oklab, var(--accent) 26%, var(--surface));
+  --accent-ink:  color-mix(in oklab, var(--accent) 82%, #000);
+}
+.theme-dark {
+  --bg:        #16130F;
+  --surface:   #211D17;
+  --surface-2: #2A251E;
+  --surface-3: #342E25;
+  --ink:       #F1ECE2;
+  --ink-2:     #B0A698;
+  --ink-3:     #7F7768;
+  --border:    #322C24;
+  --border-2:  #403930;
+  --accent:    #1F6E47;
+  --on-accent: #FFFFFF;
+  --amber:     #E0AF4E;
+  --amber-bg:  #34291296;
+  --red:       #E08A78;
+  --red-bg:    #3A201996;
+  --paid:      #6FC18C;
+  --paid-bg:   #1E2E2196;
+  --you:       #A9B4E8;
+  --you-bg:    #23253296;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-md: 0 2px 8px rgba(0,0,0,.35), 0 12px 30px rgba(0,0,0,.35);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,.45), 0 30px 70px rgba(0,0,0,.5);
+
+  --accent-soft: color-mix(in oklab, var(--accent) 30%, var(--surface));
+  --accent-line: color-mix(in oklab, var(--accent) 46%, var(--surface));
+  --accent-ink:  color-mix(in oklab, var(--accent) 50%, #fff);
+}
+
+/* ============================================================
+   PRIMITIVES
+   ============================================================ */
+.jobab .row { display:flex; align-items:center; }
+.jobab .col { display:flex; flex-direction:column; }
+.jobab button { font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; }
+.jobab .muted { color: var(--ink-2); }
+.jobab .faint { color: var(--ink-3); }
+.jobab .num { font-variant-numeric: tabular-nums; }
+
+/* scrollbars */
+.jobab ::-webkit-scrollbar { width:10px; height:10px; }
+.jobab ::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--ink-3) 40%, transparent); border-radius:10px; border:3px solid transparent; background-clip:padding-box; }
+.jobab ::-webkit-scrollbar-thumb:hover { background: color-mix(in oklab, var(--ink-3) 70%, transparent); background-clip:padding-box; border:3px solid transparent; }
+
+/* avatar */
+.jobab .av { flex:0 0 auto; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-weight:600; color:#fff; letter-spacing:.01em; overflow:hidden; }
+
+/* ============================================================
+   STATUS PILL  (3 treatments via .pill-soft / .pill-solid / .pill-dot)
+   tones: .t-ai .t-needs .t-you .t-paid
+   ============================================================ */
+.jobab .pill { display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600;
+  white-space:nowrap; border-radius:999px; line-height:1; }
+.jobab .pill .dot { width:7px; height:7px; border-radius:50%; flex:0 0 auto; }
+
+/* soft (tinted bg) */
+.jobab .pill-soft { padding:5px 11px 5px 9px; }
+.pill-soft.t-ai    { background:var(--accent-soft); color:var(--accent-ink); }
+.pill-soft.t-ai .dot    { background:var(--accent); }
+.pill-soft.t-needs { background:var(--amber-bg); color:var(--amber); }
+.pill-soft.t-needs .dot { background:var(--amber); }
+.pill-soft.t-you   { background:var(--you-bg);  color:var(--you); }
+.pill-soft.t-you .dot   { background:var(--you); }
+.pill-soft.t-paid  { background:var(--paid-bg); color:var(--paid); }
+.pill-soft.t-paid .dot  { background:var(--paid); }
+
+/* solid (filled) */
+.jobab .pill-solid { padding:5px 11px; color:#fff; }
+.pill-solid .dot { background:rgba(255,255,255,.85); }
+.pill-solid.t-ai    { background:var(--accent); }
+.pill-solid.t-needs { background:var(--amber); color:#fff; }
+.pill-solid.t-you   { background:var(--you); }
+.pill-solid.t-paid  { background:var(--paid); }
+.theme-dark .pill-solid { color:#15110c; }
+.theme-dark .pill-solid .dot { background:rgba(0,0,0,.5); }
+
+/* dot (minimal — dot + text, no chip) */
+.jobab .pill-dot { padding:2px 0; gap:7px; }
+.pill-dot.t-ai .dot { background:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+.pill-dot.t-ai    { color:var(--accent-ink); }
+.pill-dot.t-needs { color:var(--amber); }      .pill-dot.t-needs .dot { background:var(--amber); box-shadow:0 0 0 3px var(--amber-bg); }
+.pill-dot.t-you   { color:var(--you); }         .pill-dot.t-you .dot   { background:var(--you);  box-shadow:0 0 0 3px var(--you-bg); }
+.pill-dot.t-paid  { color:var(--paid); }        .pill-dot.t-paid .dot  { background:var(--paid); box-shadow:0 0 0 3px var(--paid-bg); }
+
+/* gentle pulse for live AI dot */
+@keyframes jb-pulse { 0%,100%{ transform:scale(1); opacity:1 } 50%{ transform:scale(1.35); opacity:.55 } }
+.jobab .pulse .dot { animation: jb-pulse 2.4s ease-in-out infinite; }
+
+/* ============================================================
+   MESSAGE BUBBLES — 3 senders
+   .b-cust (incoming) / .b-ai (outgoing AI) / .b-you (outgoing human)
+   style variants on the thread wrapper: .bub-tinted / .bub-bordered / .bub-badged
+   ============================================================ */
+.jobab .msg { display:flex; gap:9px; max-width:80%; }
+.jobab .msg .av { width:30px; height:30px; font-size:12px; align-self:flex-end; }
+.jobab .bubble { padding:9px 13px; border-radius:18px; font-size:15px; line-height:1.5; position:relative;
+  box-shadow:var(--shadow-sm); word-break:break-word; }
+.jobab .bubble .time { font-size:11px; color:var(--ink-3); margin-top:4px; display:block; }
+
+/* customer — incoming, left, neutral surface */
+.jobab .row-cust { justify-content:flex-start; }
+.jobab .b-cust { background:var(--surface); color:var(--ink); border:1px solid var(--border);
+  border-bottom-left-radius:6px; }
+
+/* outgoing rows align right */
+.jobab .row-ai, .jobab .row-you { justify-content:flex-end; margin-left:auto; }
+.jobab .row-ai .av, .jobab .row-you .av { display:none; }
+
+/* AI marker chip */
+.jobab .ai-tag { display:flex; width:fit-content; align-items:center; gap:4px; font-size:10.5px; font-weight:700;
+  letter-spacing:.04em; text-transform:uppercase; margin-bottom:5px; white-space:nowrap; }
+.jobab .ai-tag .spark, .jobab .you-tag svg { flex:0 0 auto; }
+.jobab .ai-tag .spark { width:13px; height:13px; }
+.jobab .you-tag { display:flex; width:fit-content; align-items:center; gap:4px; font-size:10.5px; font-weight:700;
+  letter-spacing:.04em; text-transform:uppercase; margin-bottom:5px; color:var(--you); white-space:nowrap; }
+
+/* --- variant A: tinted (AI = accent tint, human = blue-grey solid) --- */
+.bub-tinted .b-ai  { background:var(--accent-soft); color:var(--ink); border-bottom-right-radius:6px;
+  border:1px solid var(--accent-line); }
+.bub-tinted .b-ai .ai-tag { color:var(--accent-ink); }
+.bub-tinted .b-you { background:var(--you); color:#fff; border-bottom-right-radius:6px; }
+.bub-tinted .b-you .you-tag { color:rgba(255,255,255,.85); }
+.bub-tinted .b-you .time { color:rgba(255,255,255,.7); }
+
+/* --- variant B: bordered (AI = surface + accent left edge, human = solid neutral ink) --- */
+.bub-bordered .b-ai { background:var(--surface); color:var(--ink); border:1px solid var(--border);
+  border-left:3px solid var(--accent); border-bottom-right-radius:6px; }
+.bub-bordered .b-ai .ai-tag { color:var(--accent-ink); }
+.bub-bordered .b-you { background:var(--surface-3); color:var(--ink); border:1px solid var(--border-2);
+  border-bottom-right-radius:6px; }
+
+/* --- variant C: badged (AI = solid accent w/ white text, human = outlined) --- */
+.bub-badged .b-ai { background:var(--accent); color:#fff; border-bottom-right-radius:6px; }
+.bub-badged .b-ai .ai-tag { color:rgba(255,255,255,.9); }
+.bub-badged .b-ai .time { color:rgba(255,255,255,.7); }
+.bub-badged .b-you { background:transparent; color:var(--ink); border:1.5px solid var(--you);
+  border-bottom-right-radius:6px; }
+.bub-badged .b-you .you-tag { color:var(--you); }
+
+/* message reveal animation */
+@keyframes jb-rise { from{ opacity:0; transform:translateY(10px) } to{ opacity:1; transform:none } }
+.jobab .msg-in { animation: jb-rise .42s cubic-bezier(.2,.8,.25,1) both; }
+
+/* image / product placeholder */
+.jobab .ph { position:relative; border-radius:12px; overflow:hidden; background:
+  repeating-linear-gradient(45deg, var(--surface-2), var(--surface-2) 9px, var(--surface-3) 9px, var(--surface-3) 18px);
+  display:flex; align-items:flex-end; }
+.jobab .ph .ph-lbl { font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:10px; color:var(--ink-2);
+  background:color-mix(in oklab,var(--surface) 75%, transparent); padding:3px 6px; margin:6px; border-radius:5px;
+  backdrop-filter:blur(3px); }
+
+/* ============================================================
+   THREAD COMPOSER + TAKEOVER
+   ============================================================ */
+.jobab .takeover { display:inline-flex; align-items:center; gap:0; background:var(--surface-2);
+  border:1px solid var(--border-2); border-radius:999px; padding:3px; }
+.jobab .takeover button { font-size:12.5px; font-weight:600; padding:7px 14px; border-radius:999px;
+  color:var(--ink-2); transition:.18s; white-space:nowrap; min-height:34px; }
+.jobab .takeover button.on { background:var(--surface); color:var(--ink); box-shadow:var(--shadow-sm); }
+.jobab .takeover button.on.on-you { color:var(--you); }
+.jobab .takeover button.on.on-ai  { color:var(--accent-ink); }
+
+.jobab .composer { border-top:1px solid var(--border); background:var(--surface); padding:12px 16px; }
+.jobab .composer-input { display:flex; align-items:center; gap:10px; background:var(--surface-2);
+  border:1px solid var(--border-2); border-radius:22px; padding:9px 9px 9px 16px; }
+.jobab .composer-input input { flex:1; border:none; background:none; outline:none; font:inherit;
+  font-size:15px; color:var(--ink); }
+.jobab .composer-input input::placeholder { color:var(--ink-3); }
+.jobab .send { width:38px; height:38px; border-radius:50%; background:var(--accent); color:#fff;
+  display:flex; align-items:center; justify-content:center; flex:0 0 auto; box-shadow:var(--shadow-sm); transition:.15s; }
+.jobab .send:hover { filter:brightness(1.07); }
+.jobab .composer-ai { display:flex; align-items:center; gap:10px; justify-content:center; color:var(--ink-2);
+  font-size:13.5px; padding:6px; }
+.jobab .typing { display:inline-flex; gap:3px; align-items:center; }
+.jobab .typing i { width:5px; height:5px; border-radius:50%; background:var(--accent); display:inline-block;
+  animation: jb-typ 1.2s infinite ease-in-out; }
+.jobab .typing i:nth-child(2){ animation-delay:.15s } .jobab .typing i:nth-child(3){ animation-delay:.3s }
+@keyframes jb-typ { 0%,60%,100%{ transform:translateY(0); opacity:.4 } 30%{ transform:translateY(-4px); opacity:1 } }
+
+/* ============================================================
+   CONVERSATION LIST
+   ============================================================ */
+.jobab .conv { display:flex; gap:11px; padding:12px 14px; border-radius:14px; cursor:pointer;
+  position:relative; transition:background .14s; align-items:flex-start; }
+.jobab .conv:hover { background:var(--surface-2); }
+.jobab .conv.active { background:var(--surface); box-shadow:var(--shadow-sm); }
+.jobab .conv.active::before { content:''; position:absolute; left:0; top:14px; bottom:14px; width:3px;
+  border-radius:3px; background:var(--accent); }
+.jobab .conv .av { width:44px; height:44px; font-size:15px; }
+.jobab .conv .nm { font-weight:600; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1 1 auto; min-width:0; }
+.jobab .conv .snippet { font-size:13px; color:var(--ink-2); overflow:hidden; text-overflow:ellipsis;
+  white-space:nowrap; max-width:100%; }
+.jobab .conv .when { font-size:11.5px; color:var(--ink-3); white-space:nowrap; }
+.jobab .conv.needs { background:var(--amber-bg); }
+.jobab .conv.needs:hover { background:color-mix(in oklab, var(--amber-bg) 80%, var(--ink)); }
+.jobab .conv .unread { min-width:19px; height:19px; padding:0 5px; border-radius:999px; background:var(--accent);
+  color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.theme-dark .jobab .conv .unread, .theme-dark .conv .unread { color:#0f130d; }
+
+/* ============================================================
+   ORDER PANEL
+   ============================================================ */
+.jobab .order-line { display:flex; gap:11px; padding:11px 0; border-bottom:1px solid var(--border); }
+.jobab .order-line .thumb { width:48px; height:56px; border-radius:9px; flex:0 0 auto; }
+.jobab .field { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:11px;
+  background:var(--surface-2); border:1px solid transparent; font-size:14px; }
+.jobab .field.missing { background:var(--amber-bg); border:1px dashed var(--amber);
+  color:var(--amber); font-weight:600; }
+.jobab .field .ic { width:18px; flex:0 0 auto; opacity:.7; }
+.jobab .field .lbl { color:var(--ink-3); font-size:11px; text-transform:uppercase; letter-spacing:.04em;
+  font-weight:700; }
+.jobab .field.missing .lbl { color:var(--amber); }
+
+/* order status stepper */
+.jobab .stepper { display:flex; align-items:center; gap:0; }
+.jobab .stepper .step { display:flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600;
+  color:var(--ink-3); }
+.jobab .stepper .step.done { color:var(--accent-ink); }
+.jobab .stepper .step.cur { color:var(--accent); }
+.jobab .stepper .node { width:9px; height:9px; border-radius:50%; background:var(--border-2); }
+.jobab .stepper .step.done .node { background:var(--accent); }
+.jobab .stepper .step.cur .node { background:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+.jobab .stepper .bar { width:14px; height:2px; background:var(--border-2); margin:0 3px; }
+.jobab .stepper .bar.done { background:var(--accent); }
+
+/* payment chip */
+.jobab .pay { display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600;
+  padding:6px 11px; border-radius:9px; border:1px solid var(--border-2); background:var(--surface-2); }
+.jobab .pay .brandmark { width:8px; height:8px; border-radius:2px; }
+
+/* reveal animation for the panel */
+@keyframes jb-slidein { from{ opacity:0; transform:translateX(18px) } to{ opacity:1; transform:none } }
+.jobab .panel-reveal { animation: jb-slidein .5s cubic-bezier(.2,.8,.25,1) both; }
+
+/* product card (catalog-ish, used in match) */
+.jobab .pcard { border:1px solid var(--border); border-radius:14px; overflow:hidden; background:var(--surface);
+  box-shadow:var(--shadow-sm); }
+
+/* generic chips/buttons */
+.jobab .btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; font-weight:600;
+  font-size:14px; border-radius:11px; padding:11px 16px; min-height:44px; transition:.15s; }
+.jobab .btn-primary { background:var(--accent); color:#fff; box-shadow:var(--shadow-sm); }
+.jobab .btn-primary:hover { filter:brightness(1.06); }
+.jobab .btn-ghost { background:var(--surface-2); color:var(--ink); border:1px solid var(--border-2); }
+.jobab .btn-ghost:hover { background:var(--surface-3); }
+
+.jobab .iconbtn { width:40px; height:40px; border-radius:11px; display:flex; align-items:center;
+  justify-content:center; color:var(--ink-2); transition:.14s; }
+.jobab .iconbtn:hover { background:var(--surface-2); color:var(--ink); }
+
+/* sidebar nav (desktop) */
+.jobab .nav-rail { display:flex; flex-direction:column; align-items:center; gap:6px; padding:18px 0;
+  background:var(--surface); border-right:1px solid var(--border); width:72px; flex:0 0 72px; }
+.jobab .nav-item { width:46px; height:46px; border-radius:13px; display:flex; align-items:center;
+  justify-content:center; color:var(--ink-2); position:relative; transition:.15s; }
+.jobab .nav-item:hover { background:var(--surface-2); color:var(--ink); }
+.jobab .nav-item.active { background:var(--accent-soft); color:var(--accent-ink); }
+.jobab .nav-item .badge { position:absolute; top:6px; right:6px; width:8px; height:8px; border-radius:50%;
+  background:var(--amber); border:2px solid var(--surface); }
+
+/* searchbar */
+.jobab .search { display:flex; align-items:center; gap:9px; background:var(--surface-2);
+  border:1px solid var(--border-2); border-radius:12px; padding:10px 13px; color:var(--ink-3); }
+.jobab .search input { border:none; background:none; outline:none; font:inherit; font-size:14px;
+  color:var(--ink); flex:1; }
+.jobab .search input::placeholder { color:var(--ink-3); }
+
+/* filter chips */
+.jobab .fchip { font-size:13px; font-weight:600; padding:7px 13px; border-radius:999px;
+  background:var(--surface-2); color:var(--ink-2); border:1px solid transparent; white-space:nowrap; transition:.14s; }
+.jobab .fchip:hover { background:var(--surface-3); }
+.jobab .fchip.on { background:var(--ink); color:var(--bg); }
+
+/* divider */
+.jobab .hr { height:1px; background:var(--border); border:0; margin:0; }
+
+/* date divider in thread */
+.jobab .daysep { display:flex; align-items:center; justify-content:center; margin:6px 0; }
+.jobab .daysep span { font-size:11.5px; color:var(--ink-3); background:var(--bg); padding:2px 10px;
+  border-radius:999px; }
+
+/* mobile bottom sheet */
+.jobab .sheet { position:absolute; left:0; right:0; bottom:0; background:var(--surface);
+  border-radius:22px 22px 0 0; box-shadow:var(--shadow-lg); border-top:1px solid var(--border);
+  transition: transform .42s cubic-bezier(.2,.85,.25,1); z-index:30; }
+.jobab .sheet .grabber { width:38px; height:4px; border-radius:999px; background:var(--border-2);
+  margin:9px auto 4px; }
+.jobab .sheet-peek { display:flex; align-items:center; gap:10px; padding:4px 18px 16px; cursor:pointer; }
+
+/* mobile sheet open animation + scrim */
+@keyframes jb-sheetup { from{ transform:translateY(100%) } to{ transform:none } }
+.jobab .sheet.open { animation: jb-sheetup .42s cubic-bezier(.2,.85,.25,1) both; }
+@keyframes jb-fade { from{opacity:0} to{opacity:1} }
+.jobab .scrim { position:absolute; inset:0; background:rgba(18,14,10,.42); z-index:25; animation: jb-fade .3s both; }
+/* mobile peek bar (collapsed order) */
+.jobab .peekbar { display:flex; align-items:center; gap:11px; padding:12px 16px; background:var(--surface);
+  border-top:1px solid var(--border); cursor:pointer; }

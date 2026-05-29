@@ -1,0 +1,86 @@
+# Infrastructure (Postgres+pgvector, Redis) is on by default.
+# To run the apps in containers too, use:
+#   docker compose --profile apps up --build
+# Locally during dev you'll still run pnpm dev/start:worker:dev directly.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: jobab-pg
+    environment:
+      POSTGRES_USER: jobab
+      POSTGRES_PASSWORD: jobab
+      POSTGRES_DB: jobab
+    ports:
+      - "5432:5432"
+    volumes:
+      - jobab-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobab"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: jobab-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    image: jobab/backend:dev
+    container_name: jobab-backend
+    env_file: apps/backend/.env
+    environment:
+      DATABASE_URL: postgresql://jobab:jobab@postgres:5432/jobab
+      REDIS_URL: redis://redis:6379
+      WEB_ORIGIN: http://localhost:3001
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  worker:
+    profiles: ["apps"]
+    image: jobab/backend:dev
+    container_name: jobab-worker
+    env_file: apps/backend/.env
+    environment:
+      DATABASE_URL: postgresql://jobab:jobab@postgres:5432/jobab
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      backend: { condition: service_healthy }
+    command: ["node", "apps/backend/dist/agent/worker.js"]
+
+  web:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    image: jobab/web:dev
+    container_name: jobab-web
+    env_file: apps/web/.env.local
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+    depends_on:
+      backend: { condition: service_healthy }
+    ports:
+      - "3001:3001"
+
+volumes:
+  jobab-pgdata:

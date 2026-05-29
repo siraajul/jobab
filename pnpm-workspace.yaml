@@ -1,0 +1,23 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Pin react types across the monorepo so mobile (react 18.2) and web (react
+# 18.3) share one @types/react and the type-only React.ReactNode union stays
+# coherent.
+overrides:
+  '@types/react': 18.3.3
+
+# Allow build scripts for trusted packages we depend on. Each entry is
+# scrutinised when added — only add packages we actually trust to run code
+# during install.
+allowBuilds:
+  '@nestjs/core': true
+  '@prisma/client': true
+  '@prisma/engines': true
+  '@scarf/scarf': true
+  esbuild: true
+  msgpackr-extract: true
+  prisma: true
+  simple-git-hooks: true
+  unrs-resolver: true

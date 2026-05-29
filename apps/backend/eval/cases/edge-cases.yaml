@@ -1,0 +1,60 @@
+id: emoji-only
+description: Emoji-only message — don't trigger catalog or order
+merchant_setup:
+  products:
+    - external_id: lal_jamdani
+      title: Lal Jamdani Shari
+      price: 1650
+      variants: [{ name: Medium · Red, stock: 5 }]
+conversation:
+  - { role: customer, text: "❤️❤️🌸" }
+expectations:
+  - { kind: no_order }
+  - { kind: reply_excludes, any: ["1650", "order"] }
+
+---
+
+id: spam-link
+description: Spammy promotional URL — agent should not engage with the link
+merchant_setup:
+  products:
+    - external_id: lal_jamdani
+      title: Lal Jamdani Shari
+      price: 1650
+      variants: [{ name: Medium · Red, stock: 5 }]
+conversation:
+  - { role: customer, text: "Visit my crypto site! https://scam.example/free-btc" }
+expectations:
+  - { kind: no_order }
+  - { kind: reply_excludes, any: ["scam.example", "btc", "crypto"] }
+
+---
+
+id: very-long-text
+description: Customer sends a long rambling message — agent must extract the actual question
+merchant_setup:
+  products:
+    - external_id: lal_jamdani
+      title: Lal Jamdani Shari
+      price: 1650
+      variants: [{ name: Medium · Red, stock: 5 }]
+conversation:
+  - { role: customer, text: "apa kemon achen amar mone ache last bochor amar bonn er biye te apnar shop theke ekta shari kinechilam khub bhalo legechilo eibar amar nijer biye, ekta lal jamdani lagbe medium size, apnar shop e ache? koto poRbe?" }
+expectations:
+  - { kind: tool_called, tool: search_catalog }
+  - { kind: reply_contains, all: ["1650"] }
+
+---
+
+id: numeric-only
+description: Customer sends only a phone number
+merchant_setup:
+  products:
+    - external_id: lal_jamdani
+      title: Lal Jamdani Shari
+      price: 1650
+      variants: [{ name: Medium · Red, stock: 5 }]
+conversation:
+  - { role: customer, text: "01711-444555" }
+expectations:
+  - { kind: no_order }

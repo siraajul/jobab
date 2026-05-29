@@ -1,0 +1,43 @@
+{
+  "name": "jobab",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Jobab — AI sales agent for Bangladeshi social-commerce merchants. Monorepo: backend (NestJS), web (Next.js), shared types.",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "build": "pnpm -r --filter=./apps/* --filter=./packages/* build",
+    "dev": "pnpm -r --parallel --filter=./apps/* dev",
+    "test": "pnpm -r --filter=./apps/* test",
+    "lint": "pnpm -r --filter=./apps/* --filter=./packages/* lint && pnpm format:check",
+    "typecheck": "pnpm -r --filter=./apps/* --filter=./packages/* typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,md,json,yaml,yml,css}\" --ignore-path .gitignore",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,md,json,yaml,yml,css}\" --ignore-path .gitignore",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "db:migrate": "pnpm --filter @jobab/backend prisma:migrate",
+    "db:seed": "pnpm --filter @jobab/backend seed",
+    "prepare": "simple-git-hooks || true"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.3.3",
+    "simple-git-hooks": "^2.11.1",
+    "typescript": "^5.5.4"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm lint-staged",
+    "commit-msg": "pnpm commitlint --edit \"$1\""
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,md,yaml,yml,css}": "prettier --write",
+    "*.{ts,tsx}": "eslint --fix"
+  },
+  "commitlint": {
+    "extends": ["@commitlint/config-conventional"]
+  }
+}
