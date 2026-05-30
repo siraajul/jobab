@@ -12,10 +12,14 @@ If you only want to understand the strategy, read the
 
 ---
 
-## Before you start — the realities you must know
+::: warning Read the rules first
+This guide assumes you understand the
+[Meta messaging rules](../start-here/3-meta-rules-simple.md). If any of the
+bullets below surprise you, skip back and read that doc first — it's
+short.
+:::
 
-These come from [Meta's rules in plain English](../start-here/3-meta-rules-simple.md).
-Skip back if any of this surprises you.
+## Before you start — the realities you must know
 
 - Inside the 24-hour customer-service window: free AI replies, no review.
   This is what Jobab is for.
@@ -107,6 +111,12 @@ dashboard.
 
 ### Business Verification — start this NOW
 
+::: tip Critical path
+Business Verification is the longest-lead-time blocker — 3–15 days, sometimes
+longer if Meta asks for clarifications. Submit it on day one, then code in
+parallel. Everything else can be done in a day; this can't.
+:::
+
 Business Manager → **Settings → Business Info → Verify Business**.
 
 Upload, in order of importance:
@@ -116,8 +126,7 @@ Upload, in order of importance:
 3. Tax document or utility bill at the registered address
 4. Bank statement on company letterhead (sometimes asked for)
 
-Meta replies in 3–15 days. **Do this before you write any code** because
-it's the longest-lead-time blocker.
+Meta replies in 3–15 days.
 
 ---
 
@@ -313,8 +322,11 @@ App Dashboard → **WhatsApp → Configuration → Webhooks**.
 
 Subscribe to: **messages**, **message_status**.
 
-> **Heads up:** `/webhooks/whatsapp` doesn't exist in the codebase yet —
-> it's a Phase 2 build. Set this up in Meta only after the controller ships.
+::: warning Phase 2 build
+`/webhooks/whatsapp` doesn't exist in the codebase yet — it's part of the
+WhatsApp Cloud API integration we ship in Phase 2. Configure this in Meta
+only after the controller actually exists.
+:::
 
 ### 3.4 Submit message templates
 

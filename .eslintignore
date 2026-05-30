@@ -1,0 +1,4 @@
+# Each app owns its own ESLint flat config. apps/docs/ doesn't need
+# ESLint — it's a thin VitePress wrapper. Exempt it from lint-staged so
+# adding a config file isn't a prerequisite for committing docs.
+apps/docs/

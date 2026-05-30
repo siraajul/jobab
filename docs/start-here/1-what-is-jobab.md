@@ -6,7 +6,7 @@ Instagram, and WhatsApp.
 ## The problem we're solving
 
 Picture a saree shop in Dhaka. The whole business runs out of a Facebook page.
-Customers see a photo, they DM "এই শাড়িটা আছে? দাম কত? মিডিয়াম লাগবে।" and the
+Customers see a photo, they DM <span lang="bn">"এই শাড়িটা আছে? দাম কত? মিডিয়াম লাগবে।"</span> and the
 shop owner answers from her phone. She replies all day, every day, to hundreds
 of these messages. She still misses some. She still loses sales because she
 was eating dinner.

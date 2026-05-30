@@ -2,8 +2,11 @@
 
 How we connect Jobab to real customer DMs, in what order, and why.
 
-If you haven't read [Meta's rules in plain English](../start-here/3-meta-rules-simple.md)
-yet, do that first — this whole plan is shaped by those rules.
+::: tip Background reading
+This whole plan is shaped by Meta's messaging rules. If you haven't read
+[Meta's rules in plain English](../start-here/3-meta-rules-simple.md) yet,
+start there — it's a 5-minute read.
+:::
 
 ## The short version
 

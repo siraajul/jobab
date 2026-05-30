@@ -4,6 +4,12 @@ If you've ever wondered "why can't the AI just message customers whenever?" —
 this is the answer. Meta has strict rules about when and what businesses can
 send. Jobab follows them.
 
+::: tip TL;DR
+Customer messages you → you have **24 hours of free conversation** to do
+whatever you want. After that, only WhatsApp templates can reach them
+(paid, must be pre-approved). Cold DMs are forbidden everywhere.
+:::
+
 ## The shop analogy
 
 Think of Facebook Messenger like a physical shop:
@@ -52,6 +58,12 @@ Messenger anymore. Not even "your order shipped." Meta used to allow special
 
 So for "your order shipped" notifications: use WhatsApp, or SMS, or call.
 
+::: warning Why this matters for Jobab
+Order-update notifications outside the 24-hour window have to go through
+WhatsApp templates for now. That's why WhatsApp is Phase 2 of the
+[channel plan](../ship/1-channel-plan.md) — not optional.
+:::
+
 ### Rule 4 — WhatsApp has its own door, with a checklist
 
 WhatsApp is more lenient than Messenger, but stricter than it used to be.
@@ -94,6 +106,10 @@ Time to notify "your order shipped"?
     • SMS ─► ✅ always works
     • Phone call ─► ✅ always works
 ```
+
+::: danger Hard "do not do this" list
+The next table is not exaggeration — each of these has gotten apps banned.
+:::
 
 ## What Jobab must NOT do (or Meta will ban us)
 

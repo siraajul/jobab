@@ -44,7 +44,7 @@ A background process pulls the job from the queue. It loads:
 The AI is Llama 3.3 (run by Groq, which is fast and cheap). It looks at the
 message and decides what to do next. It can:
 
-- Just reply with text ("আছে আপু, ১২৫০ টাকা")
+- Just reply with text (<span lang="bn">"আছে আপু, ১২৫০ টাকা"</span>)
 - Use a tool first ("look up this product in the catalog before answering")
 - Take an order ("save name, address, size, generate bKash link")
 - Hand off to the merchant ("this is a complaint, I'm getting out of the way")

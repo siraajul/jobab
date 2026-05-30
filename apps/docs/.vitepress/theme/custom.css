@@ -1,0 +1,249 @@
+/* ─────────────────────────────────────────────────────────────────
+ * Jobab brand theme for VitePress.
+ *
+ * Mirrors the palette + typography of the web dashboard so the docs
+ * feel like the same product. Source palette:
+ *   apps/web/app/globals.css
+ * ───────────────────────────────────────────────────────────────── */
+
+/* Hind Siliguri is Bangla-friendly and pairs cleanly with Latin glyphs. */
+@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* —— Brand —— */
+  --vp-c-brand-1: #1f6e47;
+  --vp-c-brand-2: #285c41;
+  --vp-c-brand-3: #154d31;
+  --vp-c-brand-soft: rgba(31, 110, 71, 0.14);
+
+  --vp-c-tip-1: var(--vp-c-brand-1);
+  --vp-c-tip-2: var(--vp-c-brand-2);
+  --vp-c-tip-3: var(--vp-c-brand-3);
+  --vp-c-tip-soft: var(--vp-c-brand-soft);
+
+  /* Warm cream background and ink, matching the web app */
+  --vp-c-bg: #faf7f2;
+  --vp-c-bg-soft: #f4efe6;
+  --vp-c-bg-alt: #ece5d8;
+  --vp-c-bg-elv: #ffffff;
+  --vp-c-text-1: #2a2722;
+  --vp-c-text-2: #6c645a;
+  --vp-c-text-3: #9b9285;
+  --vp-c-divider: #ebe4d7;
+  --vp-c-border: #ebe4d7;
+  --vp-c-gutter: #ece5d8;
+
+  /* Typography */
+  --vp-font-family-base:
+    'Hind Siliguri', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --vp-font-family-mono:
+    'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Slightly taller line-height — long-form reading */
+  --vp-line-height-base: 1.7;
+
+  /* —— Home page hero —— */
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #1f6e47, #9a6b0e);
+  --vp-home-hero-image-background-image: linear-gradient(-45deg, #1f6e47 50%, #9a6b0e 50%);
+  --vp-home-hero-image-filter: blur(48px);
+
+  /* —— Custom container colors —— */
+  --vp-custom-block-warning-bg: rgba(154, 107, 14, 0.08);
+  --vp-custom-block-warning-border: #9a6b0e;
+  --vp-custom-block-warning-text: #6e4c0a;
+  --vp-custom-block-danger-bg: rgba(196, 60, 60, 0.08);
+
+  /* Slightly chunkier shadow on elevated surfaces */
+  --vp-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --vp-shadow-2: 0 4px 14px rgba(31, 110, 71, 0.08);
+}
+
+.dark {
+  --vp-c-bg: #16130f;
+  --vp-c-bg-soft: #211d17;
+  --vp-c-bg-alt: #2a251e;
+  --vp-c-bg-elv: #211d17;
+  --vp-c-text-1: #f1ece2;
+  --vp-c-text-2: #b0a698;
+  --vp-c-text-3: #7f7768;
+  --vp-c-divider: #322c24;
+  --vp-c-border: #322c24;
+  --vp-c-gutter: #16130f;
+
+  --vp-c-brand-1: #5fb085;
+  --vp-c-brand-2: #4a9b71;
+  --vp-c-brand-3: #1f6e47;
+  --vp-c-brand-soft: rgba(95, 176, 133, 0.16);
+
+  --vp-c-tip-1: var(--vp-c-brand-1);
+  --vp-c-tip-2: var(--vp-c-brand-2);
+  --vp-c-tip-3: var(--vp-c-brand-3);
+  --vp-c-tip-soft: var(--vp-c-brand-soft);
+
+  --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #5fb085, #e0af4e);
+  --vp-home-hero-image-background-image: linear-gradient(-45deg, #1f6e47 50%, #e0af4e 50%);
+
+  --vp-custom-block-warning-bg: rgba(224, 175, 78, 0.08);
+  --vp-custom-block-warning-border: #e0af4e;
+  --vp-custom-block-warning-text: #e0af4e;
+}
+
+/* ─── Type ─────────────────────────────────────────────────────── */
+
+.vp-doc h1,
+.vp-doc h2,
+.vp-doc h3 {
+  letter-spacing: -0.01em;
+}
+
+.vp-doc h1 {
+  font-weight: 700;
+  font-size: 2.25rem;
+  line-height: 1.2;
+  margin-bottom: 1.5rem;
+}
+
+.vp-doc h2 {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--vp-c-divider);
+  font-weight: 600;
+  font-size: 1.5rem;
+}
+
+.vp-doc h3 {
+  font-weight: 600;
+  margin-top: 2rem;
+}
+
+.vp-doc p {
+  margin: 1em 0;
+}
+
+/* Pull-quote feel for the > paragraphs without losing markdown semantics */
+.vp-doc blockquote {
+  border-left: 3px solid var(--vp-c-brand-1);
+  background: var(--vp-c-bg-soft);
+  padding: 0.75rem 1rem;
+  border-radius: 0 8px 8px 0;
+}
+
+/* ─── Inline code + code blocks ────────────────────────────────── */
+
+.vp-doc :not(pre) > code {
+  background: var(--vp-c-brand-soft);
+  color: var(--vp-c-brand-3);
+  padding: 0.15em 0.4em;
+  border-radius: 5px;
+  font-size: 0.88em;
+}
+
+.dark .vp-doc :not(pre) > code {
+  color: var(--vp-c-brand-1);
+}
+
+.vp-doc div[class*='language-'] {
+  border-radius: 10px;
+  box-shadow: var(--vp-shadow-1);
+}
+
+/* ─── Tables ──────────────────────────────────────────────────── */
+
+.vp-doc table {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--vp-c-divider);
+  width: 100%;
+}
+
+.vp-doc th {
+  background: var(--vp-c-bg-soft);
+  font-weight: 600;
+  text-align: left;
+}
+
+.vp-doc tr:nth-child(even) {
+  background: color-mix(in oklab, var(--vp-c-bg-soft) 50%, transparent);
+}
+
+/* ─── Sidebar polish ──────────────────────────────────────────── */
+
+.VPSidebarItem.level-0 > .item > .text {
+  font-weight: 700;
+  color: var(--vp-c-text-1);
+}
+
+.VPSidebarItem.is-active > .item .text {
+  color: var(--vp-c-brand-1) !important;
+}
+
+/* ─── Hero ────────────────────────────────────────────────────── */
+
+.VPHero .name {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.VPHero .text {
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+}
+
+.VPHero .tagline {
+  color: var(--vp-c-text-2);
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+
+/* ─── Feature cards on the home page ─────────────────────────── */
+
+.VPFeature {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 12px;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.VPFeature:hover {
+  transform: translateY(-2px);
+  border-color: var(--vp-c-brand-1);
+  box-shadow: var(--vp-shadow-2);
+}
+
+.VPFeature .icon {
+  background: var(--vp-c-brand-soft);
+  font-size: 1.5rem;
+}
+
+/* ─── Buttons ─────────────────────────────────────────────────── */
+
+.VPButton.brand {
+  background: linear-gradient(135deg, var(--vp-c-brand-1), var(--vp-c-brand-2));
+  border: none;
+}
+
+.VPButton.brand:hover {
+  filter: brightness(1.08);
+}
+
+/* ─── Focus visible — accessibility ───────────────────────────── */
+
+*:focus-visible {
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ─── Reduced motion ──────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
