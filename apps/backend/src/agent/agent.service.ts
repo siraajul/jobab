@@ -1,15 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { EnvService } from '../config/env.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CatalogService } from '../catalog/catalog.service';
 import { MessengerService } from '../messenger/messenger.service';
 import { OrderGuardrail } from '../orders/order.guardrail';
-import { GroqProvider } from './llm/groq.provider';
 import { GroqVisionProvider } from '../vision/groq-vision.provider';
 import { JinaEmbeddingProvider } from '../embeddings/jina.provider';
 import { LangfuseService } from '../observability/langfuse.service';
 import { captureError } from '../observability/sentry';
 import { WhatsAppService } from '../notifications/whatsapp.service';
+import { LLM_PROVIDER } from './llm/llm.token';
 import { LlmMessage, LlmProvider, LlmToolCall } from './llm/provider';
 import { TOOLS, TOOL_BY_NAME } from './tools/registry';
 import { ToolContext } from './tools/types';
@@ -27,7 +27,7 @@ export class AgentService {
     private readonly catalog: CatalogService,
     private readonly messenger: MessengerService,
     private readonly guardrail: OrderGuardrail,
-    private readonly llm: GroqProvider, // swap via DI when more providers exist
+    @Inject(LLM_PROVIDER) private readonly llm: LlmProvider,
     private readonly vision: GroqVisionProvider,
     private readonly embeddings: JinaEmbeddingProvider,
     private readonly env: EnvService,

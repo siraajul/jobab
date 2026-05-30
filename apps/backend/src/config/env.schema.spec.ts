@@ -28,8 +28,13 @@ describe('validateEnv', () => {
   });
 
   it('throws on short encryption key', () => {
-    expect(() => validateEnv({ ...minimal, ENCRYPTION_KEY: 'short' })).toThrow(
-      /ENCRYPTION_KEY/,
-    );
+    expect(() => validateEnv({ ...minimal, ENCRYPTION_KEY: 'short' })).toThrow(/ENCRYPTION_KEY/);
+  });
+
+  it('accepts LLM_PROVIDER=stub without LLM_API_KEY', () => {
+    const { LLM_API_KEY: _, ...rest } = minimal;
+    const env = validateEnv({ ...rest, LLM_PROVIDER: 'stub' });
+    expect(env.LLM_PROVIDER).toBe('stub');
+    expect(env.LLM_API_KEY).toBeUndefined();
   });
 });
