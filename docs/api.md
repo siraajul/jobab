@@ -22,8 +22,8 @@ webhooks.
 
 ```bash
 # 1. Seeded credentials (after `pnpm db:seed`).
-EMAIL="owner@rongdhonu.bd"
-PASSWORD="rongdhonu1234"
+EMAIL="owner@rongdhonu.dev"
+PASSWORD="jobab-dev-12345"
 
 # 2. Log in. The server sets two cookies into cookies.txt:
 #      - `session`    : signed user-session token

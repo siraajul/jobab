@@ -11,11 +11,9 @@
 
 > _Jobab_ (জবাব) means "answer" / "reply" in Bangla.
 
-<!-- TODO: drop a real screenshot at docs/img/inbox.png and uncomment.
 <p align="center">
-  <img src="docs/img/inbox.png" alt="Jobab inbox" width="900" />
+  <img src="docs/img/inbox.png" alt="Jobab inbox — multi-channel conversation list, open thread, CRM right rail" width="900" />
 </p>
--->
 
 A merchant connects their Facebook / Instagram / WhatsApp page. Jobab's AI
 replies to customer DMs in Bangla, Banglish, or English: it recognises products
