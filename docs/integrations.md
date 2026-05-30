@@ -41,21 +41,23 @@ Messenger + Instagram               WhatsApp Cloud API
 
 ## What's already real in the codebase
 
-| Piece                                                       | Status      | File                                                    |
-| ----------------------------------------------------------- | ----------- | ------------------------------------------------------- |
-| Webhook signature verification (Meta `X-Hub-Signature-256`) | done        | `apps/backend/src/webhooks/`                            |
-| Page/IG message normalization → `IncomingMessage`           | done        | `apps/backend/src/webhooks/`                            |
-| Send API call (`graph.facebook.com/v20.0/me/messages`)      | done        | `apps/backend/src/messenger/`                           |
-| `MESSENGER_DRY_RUN` env flag for dev                        | done        | `apps/backend/.env.example`                             |
-| `Page.platform` enum (FACEBOOK / INSTAGRAM / WHATSAPP)      | done        | `prisma/schema.prisma`                                  |
-| UI channel badges + filter                                  | done        | `apps/web/components/inbox/ChannelBadge.tsx`            |
-| Facebook Login OAuth onboarding (FB + linked IG)            | done        | `apps/backend/src/onboarding/facebook-oauth.service.ts` |
-| Long-lived Page Access Token exchange + encrypted storage   | done        | `apps/backend/src/onboarding/onboarding.controller.ts`  |
-| Per-page webhook auto-subscription on connect               | done        | `apps/backend/src/onboarding/facebook-oauth.service.ts` |
-| 24-hour-window guard on outbound sends                      | **missing** | —                                                       |
-| WhatsApp Cloud API ingest                                   | **missing** | —                                                       |
-| WhatsApp template registry                                  | **missing** | —                                                       |
-| Embedded Signup flow for WhatsApp (merchant's own WABA)     | **missing** | —                                                       |
+| Piece                                                              | Status      | File                                                         |
+| ------------------------------------------------------------------ | ----------- | ------------------------------------------------------------ |
+| Webhook signature verification (Meta `X-Hub-Signature-256`)        | done        | `apps/backend/src/webhooks/`                                 |
+| Page/IG message normalization → `IncomingMessage`                  | done        | `apps/backend/src/webhooks/`                                 |
+| Send API call (`graph.facebook.com/v22.0/me/messages`)             | done        | `apps/backend/src/messenger/`                                |
+| `MESSENGER_DRY_RUN` env flag for dev                               | done        | `apps/backend/.env.example`                                  |
+| `Page.platform` enum (FACEBOOK / INSTAGRAM / WHATSAPP)             | done        | `prisma/schema.prisma`                                       |
+| UI channel badges + filter                                         | done        | `apps/web/components/inbox/ChannelBadge.tsx`                 |
+| Facebook Login OAuth onboarding (FB + linked IG)                   | done        | `apps/backend/src/onboarding/facebook-oauth.service.ts`      |
+| Long-lived Page Access Token exchange + encrypted storage          | done        | `apps/backend/src/onboarding/onboarding.controller.ts`       |
+| Per-page webhook auto-subscription on connect                      | done        | `apps/backend/src/onboarding/facebook-oauth.service.ts`      |
+| 24-hour-window guard on outbound sends (`OUT_OF_MESSAGING_WINDOW`) | done        | `apps/backend/src/messenger/messenger.service.ts`            |
+| `GET /conversations/:id/messaging-window` for the inbox            | done        | `apps/backend/src/conversations/conversations.controller.ts` |
+| Page Access Token rotation scaffold                                | scaffolded  | `apps/backend/src/onboarding/token-rotation.service.ts`      |
+| WhatsApp Cloud API ingest                                          | **missing** | — (Phase 2)                                                  |
+| WhatsApp template registry                                         | **missing** | — (Phase 2)                                                  |
+| Embedded Signup flow for WhatsApp (merchant's own WABA)            | **missing** | — (Phase 2)                                                  |
 
 The Messenger code path is real; Instagram piggybacks on it; WhatsApp is the
 genuinely new build.
