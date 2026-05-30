@@ -92,6 +92,7 @@ export function OnboardingClient({ initial }: { initial: OnboardingStatus | null
               pageToken={s.page.pageToken}
               setPageToken={s.page.setPageToken}
               onConnect={s.page.connect}
+              onPagesConnected={s.page.onOAuthConnected}
             />
           )}
           {s.step === 'catalog' && (

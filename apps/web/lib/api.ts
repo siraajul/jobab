@@ -54,7 +54,11 @@ async function fetcher<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export class ApiError extends Error {
-  constructor(public status: number, public path: string, public body: string) {
+  constructor(
+    public status: number,
+    public path: string,
+    public body: string,
+  ) {
     super(`${path} → ${status}`);
   }
 }
@@ -222,11 +226,36 @@ export const api = {
   // ─── analytics / settings / onboarding ─────────────────────────────────
   analytics: (days = 7) => fetcher<AnalyticsSummary>(`/analytics/summary?days=${days}`),
   getSettings: () => fetcher<SettingsPayload>('/settings'),
-  updateSettings: (body: { name?: string; aiInstructions?: string; notificationPhone?: string | null }) =>
-    fetcher<SettingsPayload>('/settings', { method: 'PATCH', body: JSON.stringify(body) }),
+  updateSettings: (body: {
+    name?: string;
+    aiInstructions?: string;
+    notificationPhone?: string | null;
+  }) => fetcher<SettingsPayload>('/settings', { method: 'PATCH', body: JSON.stringify(body) }),
   onboardingStatus: () => fetcher<OnboardingStatus>('/onboarding/status'),
   connectPage: (body: { externalPageId: string; accessToken: string; platform?: string }) =>
     fetcher<unknown>('/onboarding/pages', { method: 'POST', body: JSON.stringify(body) }),
+  oauthConfig: () => fetcher<{ facebookEnabled: boolean }>('/onboarding/facebook/oauth-config'),
+  startFacebookOAuth: () =>
+    fetcher<{ url: string }>('/onboarding/facebook/start', { method: 'POST' }),
+  listFacebookPages: () =>
+    fetcher<{
+      pages: Array<{
+        pageId: string;
+        name: string;
+        category: string | null;
+        instagramBusinessAccountId: string | null;
+        instagramUsername: string | null;
+      }>;
+    }>('/onboarding/facebook/pages'),
+  connectFacebookPages: (body: { pageIds: string[]; includeInstagram: boolean }) =>
+    fetcher<{
+      connected: Array<{
+        pageId: string;
+        platform: 'facebook' | 'instagram' | 'whatsapp';
+        name: string;
+        webhookSubscribed: boolean;
+      }>;
+    }>('/onboarding/facebook/connect', { method: 'POST', body: JSON.stringify(body) }),
 
   // ─── team ──────────────────────────────────────────────────────────────
   listMembers: () => fetcher<MemberRow[]>('/team/members'),
@@ -236,10 +265,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ email, role }),
     }),
-  revokeInvite: (id: string) =>
-    fetcher<unknown>(`/team/invites/${id}`, { method: 'DELETE' }),
-  removeMember: (id: string) =>
-    fetcher<unknown>(`/team/members/${id}`, { method: 'DELETE' }),
+  revokeInvite: (id: string) => fetcher<unknown>(`/team/invites/${id}`, { method: 'DELETE' }),
+  removeMember: (id: string) => fetcher<unknown>(`/team/members/${id}`, { method: 'DELETE' }),
   assignConversation: (conversationId: string, assigneeUserId: string | null) =>
     fetcher<unknown>('/team/assign', {
       method: 'PATCH',

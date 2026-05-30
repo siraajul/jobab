@@ -19,6 +19,7 @@ export const EnvSchema = z
     REDIS_URL: z.string().url().or(z.string().startsWith('redis://')),
 
     // Meta / Facebook
+    META_APP_ID: z.string().min(1).optional(),
     META_APP_SECRET: z.string().min(1),
     META_VERIFY_TOKEN: z.string().min(1),
     META_GRAPH_VERSION: z.string().default('v20.0'),

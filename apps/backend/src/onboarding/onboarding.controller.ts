@@ -1,9 +1,24 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Res,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { Platform } from '@prisma/client';
-import { ConnectPageBodySchema } from '@jobab/shared';
-import { OrgId } from '../auth/auth.guard';
+import {
+  ConnectFacebookPagesBodySchema,
+  ConnectPageBodySchema,
+  type FacebookPageOption,
+} from '@jobab/shared';
+import { OrgId, Public } from '../auth/auth.guard';
 import { EncryptionService } from '../common/encryption/encryption.service';
+import { EnvService } from '../config/env.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   ApiAuthCookie,
@@ -12,6 +27,8 @@ import {
   ApiZodBody,
   ApiZodOk,
 } from '../swagger/decorators';
+import { FacebookOAuthService } from './facebook-oauth.service';
+import { OAuthSessionStore } from './oauth-session.store';
 
 @ApiTags('onboarding')
 @ApiAuthCookie()
@@ -21,6 +38,9 @@ export class OnboardingController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly encryption: EncryptionService,
+    private readonly env: EnvService,
+    private readonly facebook: FacebookOAuthService,
+    private readonly oauthStore: OAuthSessionStore,
   ) {}
 
   @Get('status')
@@ -50,10 +70,11 @@ export class OnboardingController {
 
   @Post('pages')
   @ApiOperation({
-    summary: 'Connect a Facebook / Instagram / WhatsApp page',
+    summary: 'Connect a Facebook / Instagram / WhatsApp page (manual)',
     description:
-      'Upserts a `Page` row. The access token is encrypted at rest with `ENCRYPTION_KEY` so ' +
-      'merchant credentials never appear in DB dumps in plaintext.',
+      'Upserts a `Page` row from a manually pasted ID + access token. Kept for ' +
+      'WhatsApp setup and for pilot merchants connecting before App Review is approved. ' +
+      'The OAuth-driven path is `POST /onboarding/facebook/connect`.',
   })
   @ApiZodBody('ConnectPageBody', 'Page ID + access token + platform.')
   @ApiInlineOk('The created or updated Page row.', {
@@ -80,5 +101,249 @@ export class OnboardingController {
         webhookSubscribed: false,
       },
     });
+  }
+
+  // ─── Facebook OAuth ──────────────────────────────────────────────────
+
+  @Get('facebook/oauth-config')
+  @ApiOperation({
+    summary: 'Is the Facebook OAuth onboarding flow available?',
+    description:
+      'Frontends hit this to decide whether to render the "Connect with Facebook" button or ' +
+      'fall back to the manual paste form. OAuth is enabled when META_APP_ID is set.',
+  })
+  @ApiInlineOk('OAuth availability flag.', { facebookEnabled: true })
+  oauthConfig() {
+    return { facebookEnabled: this.facebook.isEnabled() };
+  }
+
+  @Post('facebook/start')
+  @ApiOperation({
+    summary: 'Begin Facebook Login OAuth flow',
+    description:
+      'Generates a CSRF state nonce, stores `{state → orgId}` server-side, and returns ' +
+      'the Facebook OAuth dialog URL for the browser to navigate to. The web app does a ' +
+      '`window.location.href = url` after this call returns.',
+  })
+  @ApiInlineOk('Authorize URL the browser should navigate to.', {
+    url: 'https://www.facebook.com/v20.0/dialog/oauth?client_id=...&state=...',
+  })
+  startFacebookOAuth(@OrgId() orgId: string) {
+    const state = this.facebook.generateState();
+    this.oauthStore.putState(state, orgId);
+    const url = this.facebook.getAuthorizeUrl(state, this.callbackUri());
+    return { url };
+  }
+
+  /**
+   * Facebook calls this endpoint after the user approves the app. It's
+   * Public — we identify the merchant via the state nonce, not via session
+   * cookies (which aren't carried across the third-party redirect).
+   */
+  @Get('facebook/callback')
+  @Public()
+  @ApiOperation({
+    summary: 'Facebook OAuth callback',
+    description:
+      'Hit by Facebook redirecting the browser back. Looks up the state nonce → orgId, ' +
+      'exchanges code → short-lived → long-lived user access token, stashes it server-side, ' +
+      "and redirects the browser to the web app's page-picker.",
+  })
+  async facebookCallback(
+    @Query('code') code: string | undefined,
+    @Query('state') state: string | undefined,
+    @Query('error') error: string | undefined,
+    @Query('error_description') errorDescription: string | undefined,
+    @Res() res: Response,
+  ) {
+    if (error) {
+      return res.redirect(
+        this.webCallbackUrl(`?fb=error&reason=${encodeURIComponent(errorDescription ?? error)}`),
+      );
+    }
+    if (!code || !state) {
+      return res.redirect(this.webCallbackUrl('?fb=error&reason=missing_params'));
+    }
+    const orgId = this.oauthStore.takeState(state);
+    if (!orgId) {
+      return res.redirect(this.webCallbackUrl('?fb=error&reason=state_expired'));
+    }
+
+    try {
+      const shortLived = await this.facebook.exchangeCodeForUserToken(code, this.callbackUri());
+      const longLived = await this.facebook.exchangeForLongLivedUserToken(shortLived);
+      this.oauthStore.putToken(orgId, this.encryption.encrypt(longLived));
+      res.redirect(this.webCallbackUrl('?fb=connected'));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'unknown';
+      res.redirect(this.webCallbackUrl(`?fb=error&reason=${encodeURIComponent(msg)}`));
+    }
+  }
+
+  @Get('facebook/pages')
+  @ApiOperation({
+    summary: 'List Facebook pages the merchant can connect',
+    description:
+      'After OAuth callback succeeds, the web app calls this to render a picker. ' +
+      'Each row includes the linked Instagram Business Account if one exists.',
+  })
+  @ApiInlineOk('Array of pages the authenticated user manages.', {
+    pages: [
+      {
+        pageId: '111222333',
+        name: 'Rongdhonu Saree',
+        category: 'Clothing Store',
+        instagramBusinessAccountId: '17841401234567890',
+        instagramUsername: 'rongdhonu.saree',
+      },
+    ],
+  })
+  async listFacebookPages(@OrgId() orgId: string) {
+    const userToken = this.readFbToken(orgId);
+    const pages = await this.facebook.listManagedPages(userToken);
+    const options: FacebookPageOption[] = pages.map((p) => ({
+      pageId: p.pageId,
+      name: p.name,
+      category: p.category,
+      instagramBusinessAccountId: p.instagramBusinessAccountId,
+      instagramUsername: p.instagramUsername,
+    }));
+    return { pages: options };
+  }
+
+  @Post('facebook/connect')
+  @ApiOperation({
+    summary: 'Connect the picked Facebook pages (and linked Instagram accounts)',
+    description:
+      'Iterates the selected pages, subscribes each to the messaging webhook, and upserts ' +
+      'one `Page` row per channel (FB always; IG too when linked and `includeInstagram` is true). ' +
+      'The long-lived Page Access Token is encrypted at rest. Clears the OAuth session on success.',
+  })
+  @ApiZodBody('ConnectFacebookPagesBody', 'Picked page IDs + IG inclusion flag.')
+  @ApiInlineOk('Per-page connection result.', {
+    connected: [
+      {
+        pageId: '111222333',
+        platform: 'facebook',
+        name: 'Rongdhonu Saree',
+        webhookSubscribed: true,
+      },
+      {
+        pageId: '17841401234567890',
+        platform: 'instagram',
+        name: 'rongdhonu.saree',
+        webhookSubscribed: true,
+      },
+    ],
+  })
+  async connectFacebookPages(@OrgId() orgId: string, @Body() body: unknown) {
+    const { pageIds, includeInstagram } = ConnectFacebookPagesBodySchema.parse(body);
+    const userToken = this.readFbToken(orgId);
+    const managed = await this.facebook.listManagedPages(userToken);
+    const picked = managed.filter((p) => pageIds.includes(p.pageId));
+    if (picked.length === 0) {
+      throw new BadRequestException("none of the picked page IDs match the merchant's pages");
+    }
+
+    const connected: Array<{
+      pageId: string;
+      platform: Platform;
+      name: string;
+      webhookSubscribed: boolean;
+    }> = [];
+
+    for (const page of picked) {
+      const subscribed = await this.facebook.subscribePageToWebhook(
+        page.pageId,
+        page.pageAccessToken,
+      );
+      await this.prisma.page.upsert({
+        where: {
+          platform_externalPageId: {
+            platform: 'facebook' as Platform,
+            externalPageId: page.pageId,
+          },
+        },
+        update: {
+          accessToken: this.encryption.encrypt(page.pageAccessToken),
+          organizationId: orgId,
+          status: 'connected',
+          webhookSubscribed: subscribed,
+        },
+        create: {
+          organizationId: orgId,
+          platform: 'facebook' as Platform,
+          externalPageId: page.pageId,
+          accessToken: this.encryption.encrypt(page.pageAccessToken),
+          status: 'connected',
+          webhookSubscribed: subscribed,
+        },
+      });
+      connected.push({
+        pageId: page.pageId,
+        platform: 'facebook' as Platform,
+        name: page.name,
+        webhookSubscribed: subscribed,
+      });
+
+      if (includeInstagram && page.instagramBusinessAccountId) {
+        // IG Business Account uses the linked Page's access token.
+        await this.prisma.page.upsert({
+          where: {
+            platform_externalPageId: {
+              platform: 'instagram' as Platform,
+              externalPageId: page.instagramBusinessAccountId,
+            },
+          },
+          update: {
+            accessToken: this.encryption.encrypt(page.pageAccessToken),
+            organizationId: orgId,
+            status: 'connected',
+            webhookSubscribed: subscribed,
+          },
+          create: {
+            organizationId: orgId,
+            platform: 'instagram' as Platform,
+            externalPageId: page.instagramBusinessAccountId,
+            accessToken: this.encryption.encrypt(page.pageAccessToken),
+            status: 'connected',
+            webhookSubscribed: subscribed,
+          },
+        });
+        connected.push({
+          pageId: page.instagramBusinessAccountId,
+          platform: 'instagram' as Platform,
+          name: page.instagramUsername ?? page.name,
+          webhookSubscribed: subscribed,
+        });
+      }
+    }
+
+    this.oauthStore.clearToken(orgId);
+    return { connected };
+  }
+
+  // ─── helpers ────────────────────────────────────────────────────────
+
+  private readFbToken(orgId: string): string {
+    const enc = this.oauthStore.peekToken(orgId);
+    if (!enc) {
+      throw new UnauthorizedException(
+        'no Facebook OAuth session — restart by hitting POST /onboarding/facebook/start',
+      );
+    }
+    try {
+      return this.encryption.decrypt(enc);
+    } catch {
+      throw new UnauthorizedException('Facebook OAuth session is malformed; restart the flow');
+    }
+  }
+
+  private callbackUri(): string {
+    return `${this.env.get('PUBLIC_URL')}/onboarding/facebook/callback`;
+  }
+
+  private webCallbackUrl(query: string): string {
+    return `${this.env.get('WEB_ORIGIN')}/onboarding/callback${query}`;
   }
 }

@@ -65,6 +65,8 @@ Add to `apps/backend/.env`:
 
 ```ini
 # Meta — shared across Messenger + Instagram
+# META_APP_ID is required for the OAuth "Connect with Facebook" button.
+# Without it, /onboarding falls back to the manual paste form.
 META_APP_ID=<from Meta dashboard>
 META_APP_SECRET=<from Meta dashboard>
 META_VERIFY_TOKEN=<any random string you invent, used in webhook handshake>
@@ -122,16 +124,49 @@ This is **Phase 1**. Volume leader. Cheapest. Same App ID as Instagram.
 
 Meta App Dashboard → **Add Product → Messenger → Set Up**.
 
-### 1.2 — Generate a Page Access Token for testing [per-merchant in dev]
+### 1.2 — Configure the OAuth redirect URI [once]
 
-For now, before OAuth is built:
+The "Connect with Facebook" button in `apps/web/app/onboarding` walks the
+merchant through Facebook Login and picks pages on their behalf. To enable it:
+
+1. Set `META_APP_ID` in `apps/backend/.env` (you got this from step 0.2).
+2. Meta App Dashboard → **Use Cases → Customize → Permissions → Settings →
+   Valid OAuth Redirect URIs**.
+3. Add: `${PUBLIC_URL}/onboarding/facebook/callback` — e.g.
+   `https://abc123.ngrok.io/onboarding/facebook/callback` in dev,
+   `https://api.jobab.yoursite/onboarding/facebook/callback` in prod.
+4. Restart the backend so it picks up `META_APP_ID`.
+
+The web app now shows a blue "Connect with Facebook" button instead of (or
+above) the manual paste form. The flow is:
+
+```
+merchant clicks Connect with Facebook
+  → POST /onboarding/facebook/start          (returns { url })
+  → browser navigates to facebook.com/...    (user approves scopes)
+  → GET  /onboarding/facebook/callback       (backend exchanges code → long-lived token)
+  → browser bounced to /onboarding/callback?fb=connected
+  → web app calls GET /onboarding/facebook/pages
+  → merchant picks page(s) (linked IG accounts auto-included by default)
+  → POST /onboarding/facebook/connect        (subscribes webhook, upserts Page rows)
+```
+
+If `META_APP_ID` is unset, the OAuth button is hidden and only the manual
+paste form is shown (step 1.2-bis below).
+
+### 1.2-bis — Manual paste fallback [optional, dev only]
+
+For pilot merchants connecting before App Review is approved, or for testing
+without OAuth:
 
 1. Settings → **Messenger → API Settings → Access Tokens**.
 2. **Add or Remove Pages** → select the merchant's page (or your own test page).
 3. Click **Generate Token** next to the page row. Copy it.
+4. In `/onboarding`, click "Advanced — paste Page ID + token manually" and
+   submit. Backend route: `POST /onboarding/pages`.
 
-This is a **short-lived** token (1h). For dev that's fine. The real onboarding
-flow exchanges it for a long-lived one — see step 5.
+This is a **short-lived** token (1h). The OAuth flow above exchanges it for a
+long-lived one automatically.
 
 ### 1.3 — Configure the webhook [once]
 
@@ -152,38 +187,36 @@ not be validated," check:
 
 Then subscribe to fields: **messages**, **messaging_postbacks**, **message_reads**.
 
-### 1.4 — Subscribe each page to webhooks [per-merchant]
+### 1.4 — Webhook subscription + Page row [per-merchant, automatic via OAuth]
 
-For each page you want to receive DMs from:
+When the merchant finishes the OAuth flow above, the backend automatically:
+
+1. Calls `POST graph.facebook.com/<page>/subscribed_apps` to subscribe the
+   page to `messages`, `messaging_postbacks`, `message_reads`.
+2. Upserts a `Page` row with the encrypted long-lived Page Access Token.
+3. If the page has a linked Instagram Business Account (and the merchant
+   left the "Also connect Instagram" checkbox on), upserts a second Page row
+   with `platform=instagram`.
+
+You don't need to do anything per-merchant — that's the whole point of the
+OAuth flow. The manual curl + SQL path below only exists for the paste-token
+fallback (1.2-bis).
+
+<details>
+<summary>Manual fallback (only if you skipped OAuth)</summary>
 
 ```bash
+# 1. Subscribe page to webhook fields
 curl -X POST \
   "https://graph.facebook.com/v20.0/<PAGE_ID>/subscribed_apps" \
   -d "subscribed_fields=messages,messaging_postbacks,message_reads" \
   -d "access_token=<PAGE_ACCESS_TOKEN>"
+
+# 2. POST /onboarding/pages does the encrypted upsert for you — just hit the
+#    "Advanced" form in /onboarding and submit Page ID + token.
 ```
 
-In production this happens automatically when a merchant clicks "Connect Page"
-in `apps/web/app/onboarding`.
-
-### 1.5 — Insert the page into Jobab's DB [per-merchant]
-
-For now (before the OAuth UI is built), insert directly:
-
-```sql
-INSERT INTO "Page" (id, "shopId", "platform", "externalId", "name", "accessToken")
-VALUES (
-  gen_random_uuid()::text,
-  '<shop id>',
-  'FACEBOOK',
-  '<facebook page id>',
-  'Rongdhonu Saree',
-  '<encrypted page access token>'
-);
-```
-
-The token must be encrypted with `ENCRYPTION_KEY` — easiest is to add a small
-seed script. The pattern lives in `apps/backend/src/common/encryption/`.
+</details>
 
 ### 1.6 — Required permissions for App Review
 
@@ -226,39 +259,18 @@ Same Webhooks panel as Messenger. Find **Instagram** in the product list,
 subscribe to the **messages** field. Same callback URL — Meta routes by
 the `object` field in the payload.
 
-### 2.4 — Subscribe the page to IG messaging [per-merchant]
+### 2.4 — Instagram is auto-connected by the OAuth flow [per-merchant]
 
-```bash
-curl -X POST \
-  "https://graph.facebook.com/v20.0/<PAGE_ID>/subscribed_apps" \
-  -d "subscribed_fields=messages,messaging_postbacks,messaging_seen" \
-  -d "access_token=<PAGE_ACCESS_TOKEN>"
-```
+The OAuth onboarding (Messenger §1.2) already requests `instagram_basic` +
+`instagram_manage_messages`. The picker shows linked IG accounts inline under
+each Page, and "Also connect linked Instagram accounts" is on by default. So
+the merchant clicks once and both channels are live.
 
-The Instagram DMs come in on the **same `/webhooks/meta` endpoint**. The
-payload has `object: "instagram"` instead of `object: "page"` — the webhook
-handler routes on that.
+Instagram DMs land on the **same `/webhooks/meta` endpoint** — the payload
+has `object: "instagram"` instead of `object: "page"` and the handler routes
+on that.
 
-### 2.5 — Insert the IG page row [per-merchant]
-
-Same Page table, different platform:
-
-```sql
-INSERT INTO "Page" (id, "shopId", "platform", "externalId", "name", "accessToken")
-VALUES (
-  gen_random_uuid()::text,
-  '<shop id>',
-  'INSTAGRAM',
-  '<instagram business account id>',
-  'rongdhonu.saree',
-  '<same encrypted page access token>'
-);
-```
-
-The IG Business Account uses the **same Page Access Token** as the linked FB
-Page. One token, two Page rows.
-
-### 2.6 — Additional permissions for App Review
+### 2.5 — Additional permissions for App Review
 
 Add these to the same submission as step 1.6:
 

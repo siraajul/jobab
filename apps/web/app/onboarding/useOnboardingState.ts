@@ -147,6 +147,12 @@ export function useOnboardingState(initial: OnboardingStatus | null) {
     }
   };
 
+  /** Called by ConnectPageStep after the OAuth picker finishes upserting pages. */
+  const onOAuthPagesConnected = async () => {
+    goto('catalog');
+    await refresh();
+  };
+
   const seedSampleCatalog = async () => {
     try {
       const res = await api.syncCsv(SAMPLE_CSV);
@@ -240,7 +246,14 @@ export function useOnboardingState(initial: OnboardingStatus | null) {
     router,
     // step props — shaped to match each step's component contract
     shop: { shopName, setShopName, save: saveShopName },
-    page: { pageId, setPageId, pageToken, setPageToken, connect: connectPage },
+    page: {
+      pageId,
+      setPageId,
+      pageToken,
+      setPageToken,
+      connect: connectPage,
+      onOAuthConnected: onOAuthPagesConnected,
+    },
     catalog: {
       csvFile,
       setCsvFile,
