@@ -179,14 +179,25 @@ export default defineConfig({
           { text: 'Investor FAQ', link: '/business/4-investor-faq' },
           { text: 'Demo script', link: '/business/5-demo-script' },
           { text: 'Data room checklist', link: '/business/6-data-room' },
+          {
+            text: 'Hiring',
+            collapsed: true,
+            items: [
+              { text: 'Senior engineer JD', link: '/business/7-hiring/senior-engineer' },
+              { text: 'Merchant ops JD', link: '/business/7-hiring/merchant-ops' },
+            ],
+          },
           { text: 'Downloads (PPTX / XLSX / PDF)', link: '/business/dist/' },
         ],
       },
       {
         text: 'Legal',
-        collapsed: true,
+        collapsed: false,
         items: [
           { text: 'Privacy policy', link: '/legal/privacy-policy' },
+          { text: 'Terms of Service', link: '/legal/terms-of-service' },
+          { text: 'Refund policy', link: '/legal/refund-policy' },
+          { text: 'Merchant terms template', link: '/legal/merchant-terms' },
           { text: 'Data deletion', link: '/legal/data-deletion' },
         ],
       },
