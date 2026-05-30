@@ -14,11 +14,31 @@ type StepKey = 'shop' | 'page' | 'catalog' | 'ai' | 'whatsapp' | 'test' | 'done'
 
 const STEPS: Array<{ key: StepKey; title: string; body: string }> = [
   { key: 'shop', title: 'Name your shop', body: "What customers will see in the AI's replies." },
-  { key: 'page', title: 'Connect a Facebook Page', body: 'Or use the sample page to try it without Meta access.' },
-  { key: 'catalog', title: 'Load your catalog', body: 'Upload a CSV, or seed the sample boutique to play.' },
-  { key: 'ai', title: 'Teach the AI your voice', body: 'Tone, delivery rates, returns — anything you tell new staff.' },
-  { key: 'whatsapp', title: 'Where should we ping you?', body: 'WhatsApp number for "Tahmina needs you" alerts.' },
-  { key: 'test', title: 'Send yourself a test DM', body: 'See the AI reply to a fake customer in 5 seconds.' },
+  {
+    key: 'page',
+    title: 'Connect a Facebook Page',
+    body: 'Or use the sample page to try it without Meta access.',
+  },
+  {
+    key: 'catalog',
+    title: 'Load your catalog',
+    body: 'Upload a CSV, or seed the sample boutique to play.',
+  },
+  {
+    key: 'ai',
+    title: 'Teach the AI your voice',
+    body: 'Tone, delivery rates, returns — anything you tell new staff.',
+  },
+  {
+    key: 'whatsapp',
+    title: 'Where should we ping you?',
+    body: 'WhatsApp number for "Tahmina needs you" alerts.',
+  },
+  {
+    key: 'test',
+    title: 'Send yourself a test DM',
+    body: 'See the AI reply to a fake customer in 5 seconds.',
+  },
   { key: 'done', title: "You're live", body: 'Open the inbox and let Jobab run.' },
 ];
 
@@ -43,7 +63,11 @@ export function OnboardingClient({ initial }: { initial: OnboardingStatus | null
   const [testText, setTestText] = useState('lal jamdani shari ache?');
   const [testRunning, setTestRunning] = useState(false);
   // CSV preview state
-  const [csvFile, setCsvFile] = useState<{ name: string; content: string; rows: string[][] } | null>(null);
+  const [csvFile, setCsvFile] = useState<{
+    name: string;
+    content: string;
+    rows: string[][];
+  } | null>(null);
   const [csvUploading, setCsvUploading] = useState(false);
   // Track whether the user has interacted; without it, we'd ping-pong the
   // step state on every status refresh.
@@ -75,7 +99,9 @@ export function OnboardingClient({ initial }: { initial: OnboardingStatus | null
   };
 
   const refresh = async () => {
-    try { setStatus(await api.onboardingStatus()); } catch {}
+    try {
+      setStatus(await api.onboardingStatus());
+    } catch {}
   };
 
   const stepIdx = STEPS.findIndex((s) => s.key === step);
@@ -162,7 +188,7 @@ export function OnboardingClient({ initial }: { initial: OnboardingStatus | null
       try {
         await api.updateSettings({ notificationPhone: waPhone });
       } catch {
-        toast('error', "Use E.164 format, e.g. +8801711000000");
+        toast('error', 'Use E.164 format, e.g. +8801711000000');
         return;
       }
     }
@@ -197,7 +223,10 @@ export function OnboardingClient({ initial }: { initial: OnboardingStatus | null
       subtitle={status?.ready ? '✓ Live' : `Step ${stepIdx + 1} of ${STEPS.length}`}
       actions={
         status?.ready && (
-          <Link href="/inbox" className="rounded-full bg-accent px-3 py-1.5 text-[12.5px] font-semibold text-white shadow-sm transition hover:brightness-110">
+          <Link
+            href="/inbox"
+            className="rounded-full bg-accent px-3 py-1.5 text-[12.5px] font-semibold text-white shadow-sm transition hover:brightness-110"
+          >
             Open inbox →
           </Link>
         )
@@ -281,7 +310,9 @@ export function OnboardingClient({ initial }: { initial: OnboardingStatus | null
                 />
                 <Primary disabled={!pageId || !pageToken}>Connect</Primary>
               </form>
-              <div className="text-center text-[12px] uppercase tracking-[0.18em] text-ink-3">— or —</div>
+              <div className="text-center text-[12px] uppercase tracking-[0.18em] text-ink-3">
+                — or —
+              </div>
               <button
                 onClick={() => void connectPage(true)}
                 className="w-full rounded-xl border border-dashed border-border-2 bg-surface-2 px-4 py-2.5 text-[14px] font-semibold text-ink-2 transition hover:bg-surface-3"
@@ -324,7 +355,8 @@ export function OnboardingClient({ initial }: { initial: OnboardingStatus | null
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0 text-[12.5px] text-ink-2">
-                  <span className="font-semibold">{csvFile.name}</span> · first {csvFile.rows.length - 1} row{csvFile.rows.length - 1 === 1 ? '' : 's'} preview
+                  <span className="font-semibold">{csvFile.name}</span> · first{' '}
+                  {csvFile.rows.length - 1} row{csvFile.rows.length - 1 === 1 ? '' : 's'} preview
                 </div>
                 <button
                   type="button"
@@ -339,7 +371,9 @@ export function OnboardingClient({ initial }: { initial: OnboardingStatus | null
                   <thead className="border-b border-border-2 bg-surface-3 text-[10.5px] font-bold uppercase tracking-[0.14em] text-ink-3">
                     <tr>
                       {csvFile.rows[0]?.map((h, i) => (
-                        <th key={i} className="whitespace-nowrap px-2 py-2 text-left">{h}</th>
+                        <th key={i} className="whitespace-nowrap px-2 py-2 text-left">
+                          {h}
+                        </th>
                       ))}
                     </tr>
                   </thead>
@@ -347,7 +381,11 @@ export function OnboardingClient({ initial }: { initial: OnboardingStatus | null
                     {csvFile.rows.slice(1).map((row, i) => (
                       <tr key={i} className="border-b border-border last:border-0">
                         {row.map((cell, j) => (
-                          <td key={j} className="max-w-[240px] truncate px-2 py-1.5 text-ink" title={cell}>
+                          <td
+                            key={j}
+                            className="max-w-[240px] truncate px-2 py-1.5 text-ink"
+                            title={cell}
+                          >
                             {cell}
                           </td>
                         ))}
@@ -411,9 +449,9 @@ export function OnboardingClient({ initial }: { initial: OnboardingStatus | null
                 className="w-full rounded-[11px] border border-border-2 bg-surface-2 px-3 py-2.5 text-[15px] outline-none focus:border-accent"
               />
               <div className="text-[12px] text-ink-3">
-                We'll send a WhatsApp message when a customer needs you in person — complaints,
-                refunds, or anything the AI can't resolve. Skip this if you'd rather just use the
-                inbox.
+                We&apos;ll send a WhatsApp message when a customer needs you in person — complaints,
+                refunds, or anything the AI can&apos;t resolve. Skip this if you&apos;d rather just
+                use the inbox.
               </div>
               <div className="flex justify-end gap-2">
                 <button
@@ -431,7 +469,8 @@ export function OnboardingClient({ initial }: { initial: OnboardingStatus | null
           {step === 'test' && (
             <div className="space-y-3">
               <p className="text-[13.5px] text-ink-2">
-                We'll send a fake customer DM. The AI will reply in the inbox within a few seconds.
+                We&apos;ll send a fake customer DM. The AI will reply in the inbox within a few
+                seconds.
               </p>
               <input
                 value={testText}
@@ -454,7 +493,7 @@ export function OnboardingClient({ initial }: { initial: OnboardingStatus | null
           {step === 'done' && (
             <div className="space-y-3 text-center">
               <div className="font-display text-[28px] font-bold tracking-display text-accent">
-                You're live 🌸
+                You&apos;re live 🌸
               </div>
               <p className="text-[14px] text-ink-2">
                 Jobab is now answering DMs for you. Check the inbox to see the test reply land.
@@ -499,13 +538,7 @@ function splitCsvRow(line: string): string[] {
   return out;
 }
 
-function Primary({
-  children,
-  disabled,
-}: {
-  children: React.ReactNode;
-  disabled?: boolean;
-}) {
+function Primary({ children, disabled }: { children: React.ReactNode; disabled?: boolean }) {
   return (
     <button
       type="submit"

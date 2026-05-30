@@ -12,7 +12,6 @@ import {
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { MemberRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EnvService } from '../config/env.service';
 import { AuthService } from './auth.service';
@@ -204,7 +203,9 @@ export class AuthController {
             data: { email: invite.email.toLowerCase(), name, passwordHash },
           });
       await tx.membership.upsert({
-        where: { userId_organizationId: { userId: user.id, organizationId: invite.organizationId } },
+        where: {
+          userId_organizationId: { userId: user.id, organizationId: invite.organizationId },
+        },
         update: { role: invite.role },
         create: { userId: user.id, organizationId: invite.organizationId, role: invite.role },
       });

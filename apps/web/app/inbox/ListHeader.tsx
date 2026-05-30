@@ -20,7 +20,7 @@ export function ListHeader({
             <span className="text-accent">.</span>
           </h1>
           <div className="mt-2 text-[11px] uppercase tracking-[0.18em] text-ink-3 sm:text-[12.5px]">
-            Today's inbox
+            Today&apos;s inbox
           </div>
         </div>
         <div className="flex items-end gap-3 text-right">
@@ -36,15 +36,7 @@ export function ListHeader({
   );
 }
 
-function Counter({
-  n,
-  label,
-  tone,
-}: {
-  n: number;
-  label: string;
-  tone: 'amber' | 'accent';
-}) {
+function Counter({ n, label, tone }: { n: number; label: string; tone: 'amber' | 'accent' }) {
   return (
     <div className="flex flex-col items-end leading-none">
       <div
