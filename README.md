@@ -89,22 +89,45 @@ for the live API.
 
 ---
 
-## The dashboard at a glance
+## A quick tour
 
-The merchant-facing Next.js app (`apps/web`) is a live inbox plus the tools to
-run a shop.
+The merchant-facing Next.js app (`apps/web`) is the inbox you saw above, plus
+the tools to run a shop.
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <a href="docs/img/orders.png"><img src="docs/img/orders.png" alt="Orders" /></a>
+      <br/><sub><b>Orders</b> — lifecycle (created → confirmed → shipped → delivered), bKash payment status, printable invoice, "notify customer" actions.</sub>
+    </td>
+    <td align="center" width="50%">
+      <a href="docs/img/catalog.png"><img src="docs/img/catalog.png" alt="Catalog" /></a>
+      <br/><sub><b>Catalog</b> — products + variants synced from CSV, Shopify, or WooCommerce. Inline per-variant stock editing.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <a href="docs/img/analytics.png"><img src="docs/img/analytics.png" alt="Analytics" /></a>
+      <br/><sub><b>Analytics</b> — AI-handled vs. merchant-handled conversations, revenue, token spend, mean latency, message volume. Today / 7d / 30d / 90d.</sub>
+    </td>
+    <td align="center" width="50%">
+      <a href="docs/img/settings.png"><img src="docs/img/settings.png" alt="Settings" /></a>
+      <br/><sub><b>Settings</b> — AI voice ("Be warm. Use the customer's language."), catalog source, team members + pending invites.</sub>
+    </td>
+  </tr>
+</table>
+
+What's covered, briefly:
 
 - **Multi-channel inbox** — Facebook / Instagram / WhatsApp on one screen, with
-  filters (All · Needs you · Complaints · AI · You), sort, and customer search
-  (`⌘/`).
+  filters (All · Needs you · Complaints · AI · You), sort, and customer search.
 - **AI control** — see the AI reply in real time, watch it "thinking", take
   over / hand back per conversation, reuse the AI's last reply as a draft.
 - **CRM right rail** — contact details, the live order assembling as the AI
   takes it, tags, internal notes, activity feed (tool calls / tokens / cost),
   shared files.
-- **Operations** — Orders (with printable invoice), Catalog (CSV / Shopify /
-  WooCommerce sync + per-variant stock), Comments (intent + auto-reply rules),
-  Analytics (conversations / revenue / token spend / latency), Team & Settings.
+- **Operations** — Orders, Catalog, Comments (intent + auto-reply rules),
+  Analytics, Team & Settings.
 
 ---
 
