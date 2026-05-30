@@ -11,6 +11,10 @@ out/
 apps/docs/.vitepress/cache/
 apps/docs/.vitepress/dist/
 
+# Exception: keep generated investor docs (PPTX/XLSX/PDF) tracked so
+# they're downloadable from the live docs site.
+!docs/business/dist/
+
 # env + secrets
 .env
 .env.local
