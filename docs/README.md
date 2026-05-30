@@ -20,37 +20,49 @@ hero:
       link: https://github.com/siraajul/jobab
 
 features:
-  - icon: 📖
+  - icon:
+      src: /icons/start-here.svg
+      alt: ''
     title: Start here
     details: Plain-English overview of the product, how the AI loop works, and the Meta rules that shape it. No coding knowledge needed.
     link: /start-here/1-what-is-jobab
     linkText: Read the intro
 
-  - icon: 🛠️
+  - icon:
+      src: /icons/build.svg
+      alt: ''
     title: Build
     details: Get the project running on your machine in 15 minutes. Read the API guide. Map the codebase.
     link: /build/1-setup
     linkText: Local setup
 
-  - icon: 🚀
+  - icon:
+      src: /icons/ship.svg
+      alt: ''
     title: Ship
     details: Connect a real Facebook / Instagram / WhatsApp page. Get past Meta's App Review. Launch with the first pilot merchants.
     link: /ship/1-channel-plan
     linkText: Channel plan
 
-  - icon: 📋
+  - icon:
+      src: /icons/status.svg
+      alt: ''
     title: Status
     details: What's done, what's blocking the pilot, what to build next. The honest list.
     link: /status
     linkText: See current status
 
-  - icon: ⚖️
+  - icon:
+      src: /icons/legal.svg
+      alt: ''
     title: Legal
     details: Privacy policy and data-deletion endpoint specs that Meta App Review requires.
     link: /legal/privacy-policy
     linkText: Read the policies
 
-  - icon: 🧭
+  - icon:
+      src: /icons/decisions.svg
+      alt: ''
     title: Architecture decisions
     details: Short records of the big calls — pnpm monorepo, LLM provider interface, order guardrail.
     link: /build/decisions/
