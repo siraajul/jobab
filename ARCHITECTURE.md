@@ -12,7 +12,11 @@ file references you can open in another tab.
 ## Table of contents
 
 - [The 30-second tour](#the-30-second-tour)
+- [System diagram](#system-diagram)
+- [The agent loop](#the-agent-loop)
+- [Tech stack](#tech-stack)
 - [Monorepo layout](#monorepo-layout)
+- [Data model](#data-model)
 - [The single source of truth: `@jobab/shared`](#the-single-source-of-truth-jobabshared)
 - [Backend pattern: NestJS feature modules](#backend-pattern-nestjs-feature-modules)
 - [Frontend pattern: `page` → `Client` → `useState` → sections](#frontend-pattern-page--client--usestate--sections)
@@ -49,6 +53,83 @@ Postgres + Redis run in Docker. That's the whole picture.
 
 ---
 
+## System diagram
+
+```mermaid
+flowchart LR
+    fb[Customer DM<br/>Facebook / IG / WA] --webhook--> api[apps/backend<br/>NestJS API]
+    api --enqueue--> q[(Redis · BullMQ)]
+    q --> worker[Agent Worker]
+    worker --> llm[Groq Llama 3.3<br/>tool calling]
+    worker --> vision[Groq Llama 4 Scout<br/>vision]
+    worker --> embed[Jina v3 + CLIP v2]
+    worker --> pg[(Postgres<br/>+ pgvector)]
+    worker --send api--> fb
+    web[apps/web<br/>Next.js inbox] --REST--> api
+    api --> pg
+    pay[bKash provider] -.payment link.-> worker
+    catalog[Catalog adapters<br/>CSV / Shopify / Woo] --> api
+```
+
+Two backend processes share one codebase:
+
+- **API** (`start:dev`) — webhooks, the dashboard REST API, auth.
+- **Agent worker** (`start:worker:dev`) — drains the BullMQ queue and runs the
+  agent loop, so a slow LLM call never blocks an HTTP request.
+
+---
+
+## The agent loop
+
+```
+customer message
+    │
+    ▼
+load context (system prompt + last 40 turns + image URLs)
+    │
+    ▼
+call LLM with tool definitions (≤ LLM_MAX_ITERATIONS)
+    │
+  tool calls? ──no──▶ send final reply via Send API
+    │
+    yes
+    │
+    ▼
+execute tool ─ search_catalog        (top-N in-stock products)
+              ─ check_stock           (live qty + price for a variant)
+              ─ match_product_by_image(visual ANN → describe-then-search → vision LLM)
+              ─ save_customer_detail  (grounded against the customer's own messages)
+              ─ create_order          (order guardrail: fields · stock · total · duplicate)
+              ─ handoff_to_human      (classified: complaint / refund / payment_dispute / …)
+    │
+    └──▶ append result, re-invoke
+```
+
+Every run is recorded as an `AgentRun` (model, tokens, cost, latency, the tool
+calls it made) — that's what powers the inbox Activity feed and the Analytics
+page. The loop bails immediately if a conversation is in `human` or `closed`
+status, so a merchant takeover is always respected.
+
+---
+
+## Tech stack
+
+| Layer         | Choice                                                                 |
+| ------------- | ---------------------------------------------------------------------- |
+| Backend       | NestJS 10, TypeScript                                                  |
+| ORM / DB      | Prisma + PostgreSQL 16 with **pgvector**                               |
+| Queue         | BullMQ on Redis                                                        |
+| LLM           | Groq — Llama 3.3 (tool calling), Llama 4 Scout (vision)                |
+| Embeddings    | Jina v3 (text) + CLIP v2 (image), with a describe-then-search fallback |
+| Frontend      | Next.js 14 (app router), React, Tailwind CSS                           |
+| Contract      | Zod schemas in `@jobab/shared`                                         |
+| Payments      | bKash (dev fallback without merchant creds)                            |
+| Notifications | WhatsApp + web push (merchant alerts)                                  |
+| Observability | Pino logs, optional Sentry + Langfuse                                  |
+| Tooling       | pnpm workspaces, Jest, ESLint, Prettier                                |
+
+---
+
 ## Monorepo layout
 
 ```
@@ -68,6 +149,31 @@ Postgres + Redis run in Docker. That's the whole picture.
 **pnpm workspaces.** Adding `@jobab/shared` to either app uses
 `"@jobab/shared": "workspace:*"` — pnpm symlinks the source. Edit a schema in
 one place and both apps see it.
+
+---
+
+## Data model
+
+Key Prisma models (`apps/backend/prisma/schema.prisma`):
+
+- **Organization** — the shop. Holds AI instructions, catalog source, status.
+- **User / Membership / Invite / AuditEvent** — auth + RBAC (`owner` / `admin` /
+  `agent`).
+- **Page** — a connected channel (`facebook` / `instagram` / `whatsapp`).
+- **Product / ProductVariant** — catalog, with `textEmbedding` + `imageEmbedding`
+  (pgvector) for search and photo matching.
+- **Conversation** — a customer thread. Carries channel, assignee, captured
+  `customerName/Phone/Address`, `status` (`bot` → `needs_human` → `human` →
+  `closed`), and `handoffCategory` / `handoffReason` for complaint triage.
+- **Message** — in/out, sender (`customer` / `agent` / `human`), JSON
+  attachments (images + AI match candidates).
+- **Tag / ConversationTag** — reusable colour-coded labels applied to chats.
+- **Note** — internal merchant notes on a conversation.
+- **Order** — items, totals, `paymentStatus`, `status` (created → confirmed →
+  shipped → delivered → cancelled).
+- **Comment / CommentRule** — social comments + per-intent automation.
+- **AgentRun** — per-run model/token/cost/latency/tool-call telemetry.
+- **DeviceToken** — web-push registrations.
 
 ---
 
