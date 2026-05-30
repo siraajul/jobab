@@ -20,8 +20,8 @@ You're a developer cloning the repo for the first time.
 
 1. [Local setup](./build/1-setup.md) — get the app running on your machine (about 15 minutes)
 2. [API guide](./build/2-api-guide.md) — how the backend works, auth, error shapes
-3. [Architecture](../ARCHITECTURE.md) — the codebase map (one document, read it once)
-4. [Contributing](../CONTRIBUTING.md) — conventions, commits, PRs
+3. [Architecture](https://github.com/siraajul/jobab/blob/main/ARCHITECTURE.md) — the codebase map (one document, read it once)
+4. [Contributing](https://github.com/siraajul/jobab/blob/main/CONTRIBUTING.md) — conventions, commits, PRs
 5. [Architecture decisions](./build/decisions/) — why the codebase looks the way it does
 
 ---

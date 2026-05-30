@@ -69,7 +69,7 @@ The dashboard has six screens:
 - **Analytics** — AI vs. merchant-handled chats, revenue, cost, response time
 - **Settings + Team** — invite agents, set the AI's tone of voice, connect a Facebook Page
 
-Screenshots are in [the main README](../../README.md#a-quick-tour).
+Screenshots are in [the main README](https://github.com/siraajul/jobab#a-quick-tour).
 
 ## Next
 

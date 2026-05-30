@@ -149,5 +149,5 @@ back" in the dashboard.
 ## Next
 
 - The 24-hour-window rule that controls when Jobab can reply at all: [Meta's rules, in plain English](./3-meta-rules-simple.md)
-- The file-by-file codebase map: [ARCHITECTURE.md](../../ARCHITECTURE.md)
+- The file-by-file codebase map: [ARCHITECTURE.md](https://github.com/siraajul/jobab/blob/main/ARCHITECTURE.md)
 - Set it up locally and see the loop run: [build/1-setup.md](../build/1-setup.md)

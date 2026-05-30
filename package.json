@@ -19,6 +19,9 @@
     "infra:down": "docker compose down",
     "db:migrate": "pnpm --filter @jobab/backend prisma:migrate",
     "db:seed": "pnpm --filter @jobab/backend seed",
+    "docs:dev": "pnpm --filter @jobab/docs dev",
+    "docs:build": "pnpm --filter @jobab/docs build",
+    "docs:preview": "pnpm --filter @jobab/docs preview",
     "prepare": "simple-git-hooks || true"
   },
   "devDependencies": {

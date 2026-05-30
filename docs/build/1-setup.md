@@ -1,7 +1,7 @@
 # Local setup — running Jobab on your machine
 
 Everything a developer needs to get the project running locally and keep it
-running. The [project README](../../README.md) has the 60-second quickstart;
+running. The [project README](https://github.com/siraajul/jobab#readme) has the 60-second quickstart;
 this is the full reference.
 
 ## Table of contents

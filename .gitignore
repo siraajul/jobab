@@ -8,6 +8,8 @@ dist/
 out/
 *.tsbuildinfo
 **/coverage/
+apps/docs/.vitepress/cache/
+apps/docs/.vitepress/dist/
 
 # env + secrets
 .env
