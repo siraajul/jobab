@@ -32,7 +32,7 @@ export function ConnectivityBanner() {
   return (
     <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-center gap-2 bg-red px-4 py-1.5 text-[12.5px] font-semibold text-white shadow-md">
       <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
-      Backend unreachable — your last action may not have saved. We'll reconnect automatically.
+      Backend unreachable — your last action may not have saved. We&apos;ll reconnect automatically.
     </div>
   );
 }

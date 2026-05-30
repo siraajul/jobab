@@ -12,7 +12,8 @@ export default function NotFound() {
           Page not found<span className="text-accent">.</span>
         </div>
         <p className="max-w-sm text-[13.5px] text-ink-2">
-          The page you're looking for isn't here. Maybe it moved, or maybe it never existed.
+          The page you&apos;re looking for isn&apos;t here. Maybe it moved, or maybe it never
+          existed.
         </p>
         <Link
           href="/inbox"

@@ -9,11 +9,7 @@ import { api } from '@/lib/api';
 import { MobileNav, type MobileView } from '@/components/inbox/MobileNav';
 import { RightRail } from '@/components/inbox/RightRail';
 import { EmptyState } from '@/components/shared/EmptyState';
-import type {
-  ConversationDetail,
-  ConversationListItem,
-  Order,
-} from '@/lib/types';
+import type { ConversationDetail, ConversationListItem, Order } from '@/lib/types';
 import { ConversationList } from './ConversationList';
 import { Thread } from './Thread';
 import { useInboxState } from './useInboxState';
@@ -61,6 +57,7 @@ export function InboxClient({
 
   // Keyboard shortcuts (desktop). Skip when focus is in an input/textarea so
   // the user can type in the composer / search without surprises.
+  const { filtered, activeId, setActiveId } = state;
   useEffect(() => {
     const inTextField = () => {
       const a = document.activeElement as HTMLElement | null;
@@ -83,22 +80,21 @@ export function InboxClient({
       }
       // j / k navigate
       if (e.key === 'j' || e.key === 'k') {
-        const list = state.filtered;
-        if (list.length === 0) return;
+        if (filtered.length === 0) return;
         e.preventDefault();
-        const idx = list.findIndex((c) => c.id === state.activeId);
-        const next = e.key === 'j' ? Math.min(list.length - 1, idx + 1) : Math.max(0, idx - 1);
-        const target = list[next === -1 ? 0 : next];
-        if (target) state.setActiveId(target.id);
+        const idx = filtered.findIndex((c) => c.id === activeId);
+        const next = e.key === 'j' ? Math.min(filtered.length - 1, idx + 1) : Math.max(0, idx - 1);
+        const target = filtered[next === -1 ? 0 : next];
+        if (target) setActiveId(target.id);
       }
       // Enter opens the active conversation (mobile expands)
-      if (e.key === 'Enter' && state.activeId) {
+      if (e.key === 'Enter' && activeId) {
         setMobileView('thread');
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [state.filtered, state.activeId, state.setActiveId, mobileView]);
+  }, [filtered, activeId, setActiveId, mobileView]);
 
   return (
     <div className="grid h-[100dvh] grid-rows-[1fr_auto] xl:grid-rows-1 xl:grid-cols-[84px_minmax(320px,380px)_minmax(0,1fr)_minmax(360px,440px)]">
@@ -134,8 +130,7 @@ export function InboxClient({
 
       <main
         className={
-          'flex min-h-0 flex-col bg-bg ' +
-          (mobileView === 'thread' ? 'flex' : 'hidden xl:flex')
+          'flex min-h-0 flex-col bg-bg ' + (mobileView === 'thread' ? 'flex' : 'hidden xl:flex')
         }
       >
         {state.active ? (

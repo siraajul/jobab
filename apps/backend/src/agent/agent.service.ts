@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Direction, Sender } from '@prisma/client';
 import { EnvService } from '../config/env.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CatalogService } from '../catalog/catalog.service';
@@ -62,9 +61,7 @@ export class AgentService {
         if (m.sender === 'customer' && m.attachments) {
           const att = m.attachments as { images?: string[] } | null;
           if (att?.images?.length) {
-            const tag = att.images
-              .map((u, i) => `[customer image ${i + 1}: ${u}]`)
-              .join('\n');
+            const tag = att.images.map((u, i) => `[customer image ${i + 1}: ${u}]`).join('\n');
             content = (content ? content + '\n' : '') + tag;
           }
         }
@@ -91,7 +88,12 @@ export class AgentService {
     const maxIters = this.env.get('LLM_MAX_ITERATIONS');
     const maxOutputTokens = this.env.get('LLM_MAX_OUTPUT_TOKENS');
 
-    const toolCallLog: Array<{ name: string; arguments: unknown; result: unknown; error?: string }> = [];
+    const toolCallLog: Array<{
+      name: string;
+      arguments: unknown;
+      result: unknown;
+      error?: string;
+    }> = [];
     let inputTokens = 0;
     let outputTokens = 0;
     let costUsd = 0;
@@ -165,7 +167,10 @@ export class AgentService {
           inputTokens,
           outputTokens,
           costUsd,
-          toolCalls: { calls: toolCallLog, ...(loopError ? { error: loopError } : {}) } as unknown as object,
+          toolCalls: {
+            calls: toolCallLog,
+            ...(loopError ? { error: loopError } : {}),
+          } as unknown as object,
           latencyMs: Date.now() - started,
         },
       });
@@ -175,14 +180,13 @@ export class AgentService {
     if (finalText && finalText.trim().length > 0) {
       // Surface the latest image-match result (if any) on the outgoing message
       // so the inbox UI can render the candidate cards under the bubble.
-      const matchCall = [...toolCallLog]
-        .reverse()
-        .find((c) => c.name === 'match_product_by_image');
+      const matchCall = [...toolCallLog].reverse().find((c) => c.name === 'match_product_by_image');
       let outAttachments: Record<string, unknown> | undefined;
       if (matchCall) {
-        const r = matchCall.result as
-          | { matches?: Array<{ product_id: string; title: string; score: number }>; confident?: boolean }
-          | null;
+        const r = matchCall.result as {
+          matches?: Array<{ product_id: string; title: string; score: number }>;
+          confident?: boolean;
+        } | null;
         if (r?.matches && r.matches.length > 0) {
           // Hydrate the candidate image URLs from the catalog.
           const products = await this.prisma.product.findMany({
@@ -221,7 +225,7 @@ export class AgentService {
     // Cache-friendly: keep this string stable across turns so prompt caching kicks in (§4, §14).
     return [
       'You are Jobab, an AI sales agent for a Bangladeshi social-commerce merchant.',
-      'Reply in the customer\'s language — Bangla, Banglish, or English. Match their register and tone.',
+      "Reply in the customer's language — Bangla, Banglish, or English. Match their register and tone.",
       '',
       'Hard rules:',
       '1. ALWAYS call search_catalog BEFORE quoting any price, size, color, or stock claim.',
