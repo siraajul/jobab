@@ -60,7 +60,7 @@ and a mobile app (§12). This ADR records the key choices for the latter three.
 
 - Adding paid auth (Clerk) replaces `AuthService` and `auth.controller.ts`
   only; everything else (guards, decorators, downstream APIs) is unchanged.
-- The comment classifier is *the* model-quality lever for comment automation;
+- The comment classifier is _the_ model-quality lever for comment automation;
   the eval set (§13) should include comment classification cases.
 - Mobile cookie-as-header is mildly non-standard but avoids a JWT layer
   that would have to be kept in sync with the cookie session.

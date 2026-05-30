@@ -91,7 +91,7 @@ export class TokenRotationService {
     throw new Error(
       `token refresh not yet implemented for page=${page.externalPageId} ` +
         `(${page.platform as Platform}) — needs persistent long-lived user token on Organization. ` +
-        `Tracked in docs/integrations.md under Phase 1 follow-ups.`,
+        `Tracked in docs/ship/1-channel-plan.md under Phase 1 follow-ups.`,
     );
   }
 }

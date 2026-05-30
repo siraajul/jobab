@@ -78,14 +78,20 @@ for the live API.
 
 ## Where to go next
 
-| You want to…                                           | Read                                                                          |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| **Understand how the codebase is organised**           | [`ARCHITECTURE.md`](ARCHITECTURE.md) — 10-min tour                            |
-| **See the live API + try endpoints in your browser**   | <http://localhost:3000/docs> (Swagger UI)                                     |
-| **Read the API guide — auth, errors, golden path**     | [`docs/api.md`](docs/api.md)                                                  |
-| **Run / configure / troubleshoot the project locally** | [`docs/runbook.md`](docs/runbook.md)                                          |
-| **Add a feature end-to-end (worked example)**          | [`ARCHITECTURE.md` §7 steps](ARCHITECTURE.md#adding-a-new-feature-in-7-steps) |
-| **Contribute**                                         | [`CONTRIBUTING.md`](CONTRIBUTING.md)                                          |
+All docs live under [`docs/`](docs/) with a one-page index at
+[`docs/README.md`](docs/README.md). Or jump straight to what you need:
+
+| You want to…                                              | Read                                                                     |
+| --------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Understand the product, in plain English                  | [`docs/start-here/`](docs/start-here/)                                   |
+| Get the project running locally                           | [`docs/build/1-setup.md`](docs/build/1-setup.md)                         |
+| Browse the live API in your browser                       | <http://localhost:3000/docs> (Swagger UI)                                |
+| Read the API guide — auth, errors, golden path            | [`docs/build/2-api-guide.md`](docs/build/2-api-guide.md)                 |
+| Map the codebase                                          | [`ARCHITECTURE.md`](ARCHITECTURE.md)                                     |
+| Add a feature end-to-end (worked example)                 | [`ARCHITECTURE.md`, §7](ARCHITECTURE.md#adding-a-new-feature-in-7-steps) |
+| Connect a real Facebook / Instagram / WhatsApp page       | [`docs/ship/2-meta-setup.md`](docs/ship/2-meta-setup.md)                 |
+| See current project status — what's done, what's blocking | [`docs/status.md`](docs/status.md)                                       |
+| Contribute                                                | [`CONTRIBUTING.md`](CONTRIBUTING.md)                                     |
 
 ---
 

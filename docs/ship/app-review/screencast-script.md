@@ -24,25 +24,25 @@ customer's POV.
    Phone (customer) on the left, dashboard (merchant) on the right.
 
 3. **0:15 — customer types a Bangla message**
-   On the phone, type: *"Apa, lal jamdani shari ache? medium lagbe"*
+   On the phone, type: _"Apa, lal jamdani shari ache? medium lagbe"_
    Send.
 
 4. **0:25 — message appears in the dashboard**
    The merchant sees the incoming DM in the Inbox list. Status pill:
-   "AI handling". Caption: *"The Page receives the DM via Messenger
-   webhook."*
+   "AI handling". Caption: _"The Page receives the DM via Messenger
+   webhook."_
 
 5. **0:35 — the AI thinks**
    Show the "AI is thinking…" indicator under the customer's message.
-   Caption: *"Jobab calls search_catalog, finds the product."*
+   Caption: _"Jobab calls search_catalog, finds the product."_
 
 6. **0:45 — AI reply lands**
-   Reply appears in the dashboard *and* on the customer's Messenger.
-   Caption: *"Jobab sends the reply via Send API."*
+   Reply appears in the dashboard _and_ on the customer's Messenger.
+   Caption: _"Jobab sends the reply via Send API."_
 
 7. **0:55 — merchant takes over**
    Click "Take over" — pill turns to "You're handling".
-   Caption: *"At any time the merchant can take over."*
+   Caption: _"At any time the merchant can take over."_
 
 8. **1:05 — merchant sends a manual reply**
    Type a custom reply in the composer, hit send. Show it arrive on
@@ -68,21 +68,21 @@ comment + reply.
    On Facebook, find the most recent post on the test Page.
 
 3. **0:15 — customer comments**
-   As the test customer, comment under the post: *"price?"*
+   As the test customer, comment under the post: _"price?"_
 
 4. **0:25 — comment appears in dashboard**
    /comments page shows the new row with intent "price" and confidence
-   pct. Caption: *"Jobab classifies the intent via LLM + heuristic."*
+   pct. Caption: _"Jobab classifies the intent via LLM + heuristic."_
 
 5. **0:35 — public reply lands**
    Refresh the Facebook post — the merchant's public reply
    ("apnake inbox e details pathiyechi 🙂") is now there.
-   Caption: *"Public reply sent via pages_manage_engagement."*
+   Caption: _"Public reply sent via pages_manage_engagement."_
 
 6. **0:45 — DM appears**
    On the test customer's Messenger, the merchant's Page has sent them
-   a DM. Caption: *"Private reply opens a DM thread — agent loop takes
-   over from here."*
+   a DM. Caption: _"Private reply opens a DM thread — agent loop takes
+   over from here."_
 
 7. **0:55 — end card**
 
@@ -107,7 +107,7 @@ Business Manager.
 
 4. **0:40 — confirmation**
    Dashboard shows the Page connected, webhook subscribed flag = true.
-   Caption: *"Jobab subscribes the Page to messages + feed webhooks."*
+   Caption: _"Jobab subscribes the Page to messages + feed webhooks."_
 
 5. **0:55 — end card**
 

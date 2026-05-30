@@ -5,13 +5,13 @@ work — Meta's review queue is 2-6 weeks on a good run.
 
 ## What we're asking Meta to approve
 
-| Permission | Why we need it |
-|---|---|
-| `pages_messaging` | Read DMs to a connected Page, reply on the Page's behalf. The core product. |
-| `pages_manage_metadata` | Subscribe the Page to the messages webhook. |
-| `pages_read_engagement` | Read post comments for the comment-to-DM flow (§10). |
-| `pages_manage_engagement` | Post the public reply to comments + send the private (DM) reply. |
-| `business_management` | (Optional, only if the merchant wants the page-token rotation flow.) |
+| Permission                | Why we need it                                                              |
+| ------------------------- | --------------------------------------------------------------------------- |
+| `pages_messaging`         | Read DMs to a connected Page, reply on the Page's behalf. The core product. |
+| `pages_manage_metadata`   | Subscribe the Page to the messages webhook.                                 |
+| `pages_read_engagement`   | Read post comments for the comment-to-DM flow (§10).                        |
+| `pages_manage_engagement` | Post the public reply to comments + send the private (DM) reply.            |
+| `business_management`     | (Optional, only if the merchant wants the page-token rotation flow.)        |
 
 ## Required materials
 
@@ -22,8 +22,8 @@ work — Meta's review queue is 2-6 weeks on a good run.
   for the screen recording each permission requires (3-5 min each).
 - [`test-credentials.md`](./test-credentials.md) — Meta needs a working
   test user that can demo the whole flow. Fill in once you create one.
-- [`privacy-policy.md`](../legal/privacy-policy.md) — public URL required.
-- [`data-deletion.md`](../legal/data-deletion.md) — public URL required.
+- [`privacy-policy.md`](../../legal/privacy-policy.md) — public URL required.
+- [`data-deletion.md`](../../legal/data-deletion.md) — public URL required.
 
 ## Pre-submit checklist
 

@@ -13,7 +13,7 @@ each; they agree to a 90-min onsite setup.
 ## Week 1: onboarding + first AI replies
 
 - **Day 1 (onsite)**: 90 min at merchant's home/shop. Connect Page,
-  upload product CSV, draft AI instructions in *their* voice (record them
+  upload product CSV, draft AI instructions in _their_ voice (record them
   describing what they normally say), enable Jobab.
 - **Day 2-3**: AI is in "shadow mode" — replies are queued but not sent.
   Merchant reviews and edits. The team manually fixes anything the AI
@@ -35,6 +35,7 @@ problem? hou or na?". Log every complaint to a doc.
   tweak if pattern emerges.
 
 **Tooling**:
+
 - Daily Langfuse trace review: 10 random traces / merchant
 - Weekly model A/B: if we change the system prompt, run the eval set
   before/after; deploy only if score doesn't drop
@@ -66,11 +67,13 @@ problem? hou or na?". Log every complaint to a doc.
 ## What we instrument from day 1
 
 Already in place:
+
 - `agent_runs` — every LLM call with tokens, cost, latency, tool calls
 - `audit_events` — every state change
 - `orders` — outcome data
 
 Add for pilot:
+
 - A `pilot_event` table with `merchantId, type, payload, createdAt` for
   qualitative things: "merchant edited AI reply", "merchant marked AI
   reply as wrong", "merchant took over manually mid-conversation"

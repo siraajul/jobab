@@ -35,6 +35,7 @@ sharper question.
 ## After the call
 
 Log to `pilot_event` table:
+
 ```
 type: weekly_checkin
 metadata: { hoursSaved, mishaps[], wtp, sentiment: 'positive|neutral|negative' }

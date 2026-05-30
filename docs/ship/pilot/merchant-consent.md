@@ -1,8 +1,8 @@
 # Pilot Participation Agreement
 
-**Merchant**: ___________________________________________
-**Page**: _____________________________________________
-**Pilot start**: _______________ **Pilot end**: _______________
+**Merchant**: ********************\_\_\_********************
+**Page**: **********************\_**********************
+**Pilot start**: ******\_\_\_****** **Pilot end**: ******\_\_\_******
 
 ## What you (the merchant) agree to
 
@@ -46,15 +46,15 @@ within 14 days.
 
 ---
 
-Merchant signature: _______________________________________
+Merchant signature: ******************\_\_\_******************
 
-Date: _____________
+Date: ******\_******
 
-Jobab signature: __________________________________________
+Jobab signature: ********************\_\_********************
 
-Date: _____________
+Date: ******\_******
 
 ---
 
-*This is a working document for the pilot. Replace with a proper
-Bangla-translated legal agreement reviewed by counsel before public launch.*
+_This is a working document for the pilot. Replace with a proper
+Bangla-translated legal agreement reviewed by counsel before public launch._

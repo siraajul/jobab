@@ -1,6 +1,6 @@
 # Merchant Interview Script — 45 minutes
 
-**Goal**: understand the merchant's *current* day, not pitch Jobab. We're
+**Goal**: understand the merchant's _current_ day, not pitch Jobab. We're
 trying to learn what makes them lose orders, where the pain is, and where
 the AI would actually help.
 
@@ -61,7 +61,7 @@ their capacity, repetitive questions (price, size, delivery).
 > Erokom kichu hole apnar life-e koto shomoy bachbe?"
 
 - If it worked perfectly, how many hours/week would you save?
-- If it made *one* mistake — said the wrong price, took an order you
+- If it made _one_ mistake — said the wrong price, took an order you
   couldn't fulfil — what would you do?
 - Would you trust it during the day, at night, or both?
 - What would have to be true for you to keep paying for it?
@@ -99,6 +99,7 @@ weeks 3-4 of the pilot when we ask for credit-card-on-file.
 ## After the call (15 min, alone)
 
 Write the **one paragraph** that captures:
+
 1. The single sharpest pain they described
 2. The exact threshold of trust they'd need
 3. A number — hours saved or ৳ paid — that anchors them
