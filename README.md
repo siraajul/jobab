@@ -47,7 +47,7 @@ from one place.
   bKash payment link.
 - **Knows when to step back** — on complaints, refund/return requests, payment
   disputes, low confidence, or "I want a human", it hands off to the merchant
-  and classifies *why*.
+  and classifies _why_.
 - **Automates post comments** — detects intent on Facebook/Instagram comments
   and replies publicly and/or privately by rule.
 
@@ -165,19 +165,19 @@ status, so a merchant takeover is always respected.
 
 ## Tech stack
 
-| Layer | Choice |
-|---|---|
-| Backend | NestJS 10, TypeScript |
-| ORM / DB | Prisma + PostgreSQL 16 with **pgvector** |
-| Queue | BullMQ on Redis |
-| LLM | Groq — Llama 3.3 (tool calling), Llama 4 Scout (vision) |
-| Embeddings | Jina v3 (text) + CLIP v2 (image), with a describe-then-search fallback |
-| Frontend | Next.js 14 (app router), React, Tailwind CSS |
-| Contract | Zod schemas in `@jobab/shared` |
-| Payments | bKash (dev fallback without merchant creds) |
-| Notifications | WhatsApp + web push (merchant alerts) |
-| Observability | Pino logs, optional Sentry + Langfuse |
-| Tooling | pnpm workspaces, Jest, ESLint, Prettier |
+| Layer         | Choice                                                                 |
+| ------------- | ---------------------------------------------------------------------- |
+| Backend       | NestJS 10, TypeScript                                                  |
+| ORM / DB      | Prisma + PostgreSQL 16 with **pgvector**                               |
+| Queue         | BullMQ on Redis                                                        |
+| LLM           | Groq — Llama 3.3 (tool calling), Llama 4 Scout (vision)                |
+| Embeddings    | Jina v3 (text) + CLIP v2 (image), with a describe-then-search fallback |
+| Frontend      | Next.js 14 (app router), React, Tailwind CSS                           |
+| Contract      | Zod schemas in `@jobab/shared`                                         |
+| Payments      | bKash (dev fallback without merchant creds)                            |
+| Notifications | WhatsApp + web push (merchant alerts)                                  |
+| Observability | Pino logs, optional Sentry + Langfuse                                  |
+| Tooling       | pnpm workspaces, Jest, ESLint, Prettier                                |
 
 ## Data model
 
@@ -237,27 +237,72 @@ DEFAULT_PAGE_ID=page_rongdhonu pnpm --filter @jobab/backend send -- \
 Open the dashboard at <http://localhost:3001> and the API's auto-generated
 Swagger docs at <http://localhost:3000/docs>.
 
+### Already set up? Just start it
+
+If you've already done the one-time setup above, resuming is just infra + three
+dev processes:
+
+```bash
+# 1. Start Postgres + Redis (skip if already up)
+pnpm infra:up
+
+# 2. Three dev processes (separate terminals)
+pnpm --filter @jobab/backend start:dev          # API on :3000, Swagger at /docs
+pnpm --filter @jobab/backend start:worker:dev   # agent worker (BullMQ consumer)
+pnpm --filter @jobab/web dev                    # dashboard on :3001
+```
+
+`pnpm dev` from the root starts API + web in parallel but **skips the worker** —
+start it separately if you want the AI agent to actually reply.
+
+Re-run these only if the relevant thing changed since last time:
+
+| Change                              | Re-run                                                              |
+| ----------------------------------- | ------------------------------------------------------------------- |
+| `package.json` / lockfile           | `pnpm install`                                                      |
+| Anything in `packages/shared`       | `pnpm --filter @jobab/shared build`                                 |
+| `apps/backend/prisma/schema.prisma` | `pnpm --filter @jobab/backend prisma:generate` then `prisma:deploy` |
+| Want a fresh DB                     | `pnpm --filter @jobab/backend prisma:reset` then `seed`             |
+
+### How many terminals do I need?
+
+Full local dev: **4 terminals** (3 long-running processes + 1 spare). Infra
+(Postgres + Redis) runs detached via `pnpm infra:up`, so it doesn't need one.
+
+| #   | Terminal      | Command                                         | Why                                                                                            |
+| --- | ------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| 1   | Backend API   | `pnpm --filter @jobab/backend start:dev`        | NestJS API on `:3000`                                                                          |
+| 2   | Agent worker  | `pnpm --filter @jobab/backend start:worker:dev` | BullMQ consumer — runs the AI loop. Without this, customer DMs queue up but never get a reply. |
+| 3   | Web dashboard | `pnpm --filter @jobab/web dev`                  | Next.js on `:3001`                                                                             |
+| 4   | Spare         | —                                               | For `pnpm infra:up`, fake DMs, prisma commands, git, etc.                                      |
+
+Shortcuts:
+
+- **3 terminals** — skip the spare, briefly stop a dev process when you need a one-off command.
+- **2 terminals** — only care about the dashboard UI, not AI replies: `pnpm dev` from root (API + web together) in #1, spare in #2. Skips the worker.
+- **1 terminal** isn't viable — both `start:dev` and the worker hold the foreground.
+
 ## Environment variables
 
 `apps/backend/.env` (validated by Zod at boot — the app refuses to start if a
 required key is missing or malformed):
 
-| Variable | Purpose |
-|---|---|
-| `DATABASE_URL` | Postgres connection string (pgvector enabled) |
-| `REDIS_URL` | Redis connection for BullMQ |
-| `LLM_API_KEY` | Groq API key (**required**) |
-| `LLM_PROVIDER` / `LLM_MODEL` / `VISION_MODEL` | Model selection |
-| `LLM_MAX_ITERATIONS` / `LLM_MAX_OUTPUT_TOKENS` | Agent loop limits |
-| `JINA_API_KEY` | Embeddings (optional; falls back to describe-then-search) |
-| `ENCRYPTION_KEY` | Encrypts stored catalog credentials (**required**) |
-| `META_APP_SECRET` / `META_VERIFY_TOKEN` / `META_GRAPH_VERSION` | Meta webhook + Send API |
-| `MESSENGER_DRY_RUN` | When set, logs outbound messages instead of calling Graph |
-| `WA_PROVIDER` / `WA_ACCOUNT_SID` / `WA_AUTH_TOKEN` / `WA_FROM` | WhatsApp merchant alerts |
-| `BKASH_*` | bKash payment credentials (dev fallback without them) |
-| `WEB_ORIGIN` / `PUBLIC_URL` | CORS + absolute URLs |
-| `SENTRY_DSN` / `LANGFUSE_*` | Optional observability |
-| `PORT` / `NODE_ENV` | Server basics |
+| Variable                                                       | Purpose                                                   |
+| -------------------------------------------------------------- | --------------------------------------------------------- |
+| `DATABASE_URL`                                                 | Postgres connection string (pgvector enabled)             |
+| `REDIS_URL`                                                    | Redis connection for BullMQ                               |
+| `LLM_API_KEY`                                                  | Groq API key (**required**)                               |
+| `LLM_PROVIDER` / `LLM_MODEL` / `VISION_MODEL`                  | Model selection                                           |
+| `LLM_MAX_ITERATIONS` / `LLM_MAX_OUTPUT_TOKENS`                 | Agent loop limits                                         |
+| `JINA_API_KEY`                                                 | Embeddings (optional; falls back to describe-then-search) |
+| `ENCRYPTION_KEY`                                               | Encrypts stored catalog credentials (**required**)        |
+| `META_APP_SECRET` / `META_VERIFY_TOKEN` / `META_GRAPH_VERSION` | Meta webhook + Send API                                   |
+| `MESSENGER_DRY_RUN`                                            | When set, logs outbound messages instead of calling Graph |
+| `WA_PROVIDER` / `WA_ACCOUNT_SID` / `WA_AUTH_TOKEN` / `WA_FROM` | WhatsApp merchant alerts                                  |
+| `BKASH_*`                                                      | bKash payment credentials (dev fallback without them)     |
+| `WEB_ORIGIN` / `PUBLIC_URL`                                    | CORS + absolute URLs                                      |
+| `SENTRY_DSN` / `LANGFUSE_*`                                    | Optional observability                                    |
+| `PORT` / `NODE_ENV`                                            | Server basics                                             |
 
 `apps/web/.env.local`: `DEV_PASSWORD` (stub auth) and the backend proxy target.
 
@@ -266,31 +311,31 @@ required key is missing or malformed):
 REST, JSON, cookie session. Full interactive docs at `/docs` (Swagger) once the
 API is running. Highlights:
 
-| Area | Routes |
-|---|---|
-| **Auth** | `POST /auth/login` · `/sign-up` · `/logout` · `/accept-invite` · `POST /auth/active-org` · `GET /auth/me` · `GET /auth/invites/inspect` |
-| **Conversations** | `GET /conversations` · `GET /conversations/:id` · `GET /conversations/:id/messages/older` · `GET /conversations/:id/activity` · `POST /:id/takeover` · `POST /:id/hand-back` · `POST /:id/reply` · `POST /:id/assert-product` |
-| **Tags** | `GET/POST /tags` · `PATCH/DELETE /tags/:id` · `POST /conversations/:id/tags` · `DELETE /conversations/:id/tags/:tagId` |
-| **Notes** | `GET /conversations/:id/notes` · `POST /conversations/:id/notes` · `DELETE /conversations/:id/notes/:noteId` |
-| **Orders** | `GET /orders` · `GET /orders/:id` · `PATCH /orders/:id/status` · `POST /orders/:id/mark-paid` |
-| **Catalog** | `GET /catalog/products[/:id]` · `POST /catalog/sync/{csv,shopify,woocommerce}` · `PATCH /catalog/variants/:id/stock` |
-| **Team** | `GET /team/members` · `GET/POST /team/invites` · `DELETE /team/invites/:id` · `DELETE /team/members/:id` · `PATCH /team/assign` |
-| **Comments** | `GET /comments` · `GET /comments/rules` · `PATCH /comments/rules/:intent` |
-| **Settings / Analytics / Onboarding** | `GET/PATCH /settings` · `GET /analytics/summary` · `GET /onboarding/status` · `POST /onboarding/pages` |
-| **Webhooks** | `GET/POST /webhooks/meta` (signature-verified) · `POST /webhooks/meta/fake[-comment]` (dev) · `POST /webhooks/meta/data-deletion` |
-| **Push / Health** | `POST/DELETE /push/tokens` · `GET /healthz` · `GET /readyz` |
+| Area                                  | Routes                                                                                                                                                                                                                        |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Auth**                              | `POST /auth/login` · `/sign-up` · `/logout` · `/accept-invite` · `POST /auth/active-org` · `GET /auth/me` · `GET /auth/invites/inspect`                                                                                       |
+| **Conversations**                     | `GET /conversations` · `GET /conversations/:id` · `GET /conversations/:id/messages/older` · `GET /conversations/:id/activity` · `POST /:id/takeover` · `POST /:id/hand-back` · `POST /:id/reply` · `POST /:id/assert-product` |
+| **Tags**                              | `GET/POST /tags` · `PATCH/DELETE /tags/:id` · `POST /conversations/:id/tags` · `DELETE /conversations/:id/tags/:tagId`                                                                                                        |
+| **Notes**                             | `GET /conversations/:id/notes` · `POST /conversations/:id/notes` · `DELETE /conversations/:id/notes/:noteId`                                                                                                                  |
+| **Orders**                            | `GET /orders` · `GET /orders/:id` · `PATCH /orders/:id/status` · `POST /orders/:id/mark-paid`                                                                                                                                 |
+| **Catalog**                           | `GET /catalog/products[/:id]` · `POST /catalog/sync/{csv,shopify,woocommerce}` · `PATCH /catalog/variants/:id/stock`                                                                                                          |
+| **Team**                              | `GET /team/members` · `GET/POST /team/invites` · `DELETE /team/invites/:id` · `DELETE /team/members/:id` · `PATCH /team/assign`                                                                                               |
+| **Comments**                          | `GET /comments` · `GET /comments/rules` · `PATCH /comments/rules/:intent`                                                                                                                                                     |
+| **Settings / Analytics / Onboarding** | `GET/PATCH /settings` · `GET /analytics/summary` · `GET /onboarding/status` · `POST /onboarding/pages`                                                                                                                        |
+| **Webhooks**                          | `GET/POST /webhooks/meta` (signature-verified) · `POST /webhooks/meta/fake[-comment]` (dev) · `POST /webhooks/meta/data-deletion`                                                                                             |
+| **Push / Health**                     | `POST/DELETE /push/tokens` · `GET /healthz` · `GET /readyz`                                                                                                                                                                   |
 
 ## Useful scripts
 
-| Command | What |
-|---|---|
-| `pnpm dev` | All apps in parallel |
-| `pnpm typecheck` | TypeScript check across every package |
-| `pnpm test` | Unit tests (Jest) for every package |
-| `pnpm lint` / `pnpm format` | ESLint + Prettier |
-| `pnpm infra:up` / `pnpm infra:down` | Just the Postgres + Redis containers |
-| `pnpm db:migrate` | Prisma `migrate dev` |
-| `pnpm db:seed` | Seed Rongdhonu Boutique |
+| Command                                                        | What                                            |
+| -------------------------------------------------------------- | ----------------------------------------------- |
+| `pnpm dev`                                                     | All apps in parallel                            |
+| `pnpm typecheck`                                               | TypeScript check across every package           |
+| `pnpm test`                                                    | Unit tests (Jest) for every package             |
+| `pnpm lint` / `pnpm format`                                    | ESLint + Prettier                               |
+| `pnpm infra:up` / `pnpm infra:down`                            | Just the Postgres + Redis containers            |
+| `pnpm db:migrate`                                              | Prisma `migrate dev`                            |
+| `pnpm db:seed`                                                 | Seed Rongdhonu Boutique                         |
 | `pnpm --filter @jobab/backend send -- --customer <id> "<msg>"` | Inject a fake customer DM through the full loop |
 
 ## Testing
@@ -307,20 +352,20 @@ shared schemas give both apps runtime validation for free.
 
 ## What's real vs. stubbed
 
-| Piece | State |
-|---|---|
-| Postgres schema, agent loop, order guardrail, BullMQ queue | real |
-| Groq tool-calling agent (Llama 3.3) | real |
-| Vision (Llama 4 Scout) + Jina embeddings + pgvector ANN | real (Jina key optional; falls back to describe-then-search) |
-| Inbox: channels, assignment, tags, complaints, notes, activity, shared files | real |
-| Meta webhook ingest (signature verified) | real |
-| `POST /webhooks/meta` over HTTPS in prod | requires ngrok / deploy + Meta App Review |
-| Send API → `graph.facebook.com` | real code; gated by `MESSENGER_DRY_RUN` in dev |
-| Catalog: CSV / Shopify / WooCommerce | real |
-| Order guardrail (fields · stock · total · duplicate · grounding) | real |
-| bKash payment link | dev fallback; production needs merchant creds |
-| Auth | dev password → cookie. Replace with Clerk / Supabase per spec §11. |
-| Image embeddings on catalog sync | enabled when `JINA_API_KEY` is set |
+| Piece                                                                        | State                                                              |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Postgres schema, agent loop, order guardrail, BullMQ queue                   | real                                                               |
+| Groq tool-calling agent (Llama 3.3)                                          | real                                                               |
+| Vision (Llama 4 Scout) + Jina embeddings + pgvector ANN                      | real (Jina key optional; falls back to describe-then-search)       |
+| Inbox: channels, assignment, tags, complaints, notes, activity, shared files | real                                                               |
+| Meta webhook ingest (signature verified)                                     | real                                                               |
+| `POST /webhooks/meta` over HTTPS in prod                                     | requires ngrok / deploy + Meta App Review                          |
+| Send API → `graph.facebook.com`                                              | real code; gated by `MESSENGER_DRY_RUN` in dev                     |
+| Catalog: CSV / Shopify / WooCommerce                                         | real                                                               |
+| Order guardrail (fields · stock · total · duplicate · grounding)             | real                                                               |
+| bKash payment link                                                           | dev fallback; production needs merchant creds                      |
+| Auth                                                                         | dev password → cookie. Replace with Clerk / Supabase per spec §11. |
+| Image embeddings on catalog sync                                             | enabled when `JINA_API_KEY` is set                                 |
 
 ## License
 
