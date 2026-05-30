@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Jobab logo — based on the JamdaniMark from apps/web/components/shared/Jamdani.tsx.
+  Diamond-and-dot lattice motif borrowed from Bengali jamdani weaving.
+  Transparent background, scales infinitely.
+-->
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 24 24"
+  fill="currentColor"
+  aria-label="Jobab"
+>
+  <path d="M12 1.5l3 5.5 5.5 1.5-4 4 1 6L12 16l-5.5 2.5 1-6-4-4L9 7z" opacity=".22"/>
+  <path d="M12 5l1.6 3 3.4.5-2.5 2.4.6 3.4L12 12.6l-3.1 1.7.6-3.4-2.5-2.4 3.4-.5z"/>
+  <circle cx="12" cy="9.8" r="0.9" fill="white"/>
+</svg>

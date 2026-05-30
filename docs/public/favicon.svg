@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Favicon variant — same Jamdani mark as logo.svg but with explicit Jobab
+  brand green so it shows up correctly in browser tabs (no theme to inherit).
+-->
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 24 24"
+  aria-label="Jobab"
+>
+  <path d="M12 1.5l3 5.5 5.5 1.5-4 4 1 6L12 16l-5.5 2.5 1-6-4-4L9 7z" fill="#1F6E47" opacity=".22"/>
+  <path d="M12 5l1.6 3 3.4.5-2.5 2.4.6 3.4L12 12.6l-3.1 1.7.6-3.4-2.5-2.4 3.4-.5z" fill="#1F6E47"/>
+  <circle cx="12" cy="9.8" r="0.9" fill="#FAF7F2"/>
+</svg>

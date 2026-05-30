@@ -72,7 +72,7 @@ export default defineConfig({
   lastUpdated: true,
 
   head: [
-    ['link', { rel: 'icon', type: 'image/png', href: '/jobab/favicon.png' }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/jobab/favicon.svg' }],
     ['meta', { name: 'theme-color', content: '#1F6E47' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'Jobab — AI sales agent for Bangladeshi merchants' }],
@@ -84,13 +84,13 @@ export default defineConfig({
           'AI that replies to customer DMs in Bangla, takes orders, generates bKash links — built for shops that sell on Facebook, Instagram, and WhatsApp.',
       },
     ],
-    ['meta', { property: 'og:image', content: '/jobab/logo.png' }],
+    ['meta', { property: 'og:image', content: '/jobab/favicon.svg' }],
     ['meta', { name: 'twitter:card', content: 'summary' }],
   ],
 
   themeConfig: {
     siteTitle: 'Jobab',
-    logo: { src: '/logo.png', alt: 'Jobab' },
+    logo: { src: '/logo.svg', alt: 'Jobab' },
 
     // Top nav — keep tight so the sidebar does the navigating.
     nav: [

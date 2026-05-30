@@ -6,7 +6,7 @@ hero:
   text: AI shop assistant for Bangladeshi merchants
   tagline: Answers DMs in Bangla. Takes orders. Generates bKash links. Hands off to a human when things go sideways.
   image:
-    src: /logo.png
+    src: /logo.svg
     alt: Jobab
   actions:
     - theme: brand
