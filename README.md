@@ -46,7 +46,7 @@ want, and manages contacts, orders, and catalog from one place.
 ## 60-second quickstart
 
 Prereqs: **Node 20+**, **pnpm 9+**, **Docker**. Full setup walkthrough lives in
-[`docs/runbook.md`](docs/runbook.md).
+[`docs/build/1-setup.md`](docs/build/1-setup.md).
 
 ```bash
 # 1. Infra (Postgres + Redis)
