@@ -41,7 +41,11 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        # `--no-frozen-lockfile` because we sometimes evolve the .npmrc hoist
+        # patterns alongside docs changes and don't want a strict lock check
+        # to block a docs deploy. The main CI (lint/typecheck/test) keeps the
+        # strict check.
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build VitePress site
         run: pnpm docs:build
