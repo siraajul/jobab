@@ -12,6 +12,10 @@ from one place.
 
 > _Jobab_ (জবাব) means "answer" / "reply" in Bangla.
 
+> **New to this codebase?** Open [`ARCHITECTURE.md`](./ARCHITECTURE.md) — a 10-minute
+> tour of how every file in the repo is organised. It's the fastest way to start
+> contributing without grepping for half an hour first.
+
 ---
 
 ## Table of contents
