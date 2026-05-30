@@ -170,6 +170,11 @@ export default defineConfig({
         ],
       },
       {
+        text: 'Business',
+        collapsed: false,
+        items: [{ text: 'Pitch deck', link: '/business/1-pitch-deck' }],
+      },
+      {
         text: 'Legal',
         collapsed: true,
         items: [
