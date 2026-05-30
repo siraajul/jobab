@@ -1,13 +1,5 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-} from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import { MemberRole } from '@prisma/client';
 import {
@@ -17,6 +9,13 @@ import {
   Roles,
   type AuthenticatedContext,
 } from '../auth/auth.guard';
+import {
+  ApiAuthCookie,
+  ApiAuthErrors,
+  ApiInlineOk,
+  ApiNotFound,
+  ApiZodBody,
+} from '../swagger/decorators';
 import { TeamService } from './team.service';
 
 const InviteBody = z.object({
@@ -30,26 +29,57 @@ const AssignBody = z.object({
 });
 
 @ApiTags('team')
+@ApiAuthCookie()
+@ApiAuthErrors()
 @Controller('team')
 export class TeamController {
   constructor(private readonly svc: TeamService) {}
 
   @Get('members')
-  @ApiOperation({ summary: 'List members of the active org' })
+  @ApiOperation({
+    summary: 'List members of the active org',
+    description: 'Returns every user with a membership in the active org, plus their role.',
+  })
+  @ApiInlineOk('Members array.', [
+    { userId: 'cm0u1', name: 'Owner', email: 'owner@shop.com', role: 'owner' },
+    { userId: 'cm0u2', name: 'Sales Agent', email: 'agent@shop.com', role: 'agent' },
+  ])
   members(@OrgId() orgId: string) {
     return this.svc.listMembers(orgId);
   }
 
   @Get('invites')
-  @ApiOperation({ summary: 'List pending invites' })
+  @ApiOperation({
+    summary: 'List pending invites',
+    description: 'Open invites for the active org. Owner / admin only.',
+  })
   @Roles('owner', 'admin')
+  @ApiInlineOk('Pending invites.', [
+    { id: 'cm0inv1', email: 'new@shop.com', role: 'agent', expiresAt: '2026-06-06T00:00:00.000Z' },
+  ])
   invites(@OrgId() orgId: string) {
     return this.svc.listInvites(orgId);
   }
 
   @Post('invites')
-  @ApiOperation({ summary: 'Create a new invite (owner/admin only)' })
+  @ApiOperation({
+    summary: 'Send a new invite (owner / admin only)',
+    description:
+      'Returns the raw invite token **once** — the caller must share it out-of-band ' +
+      '(email / Slack / WhatsApp). The database only stores its hash; we cannot show the ' +
+      'token again afterwards.',
+  })
   @Roles('owner', 'admin')
+  @ApiZodBody('TeamInviteBody', 'Invitee email + role to assign on join.')
+  @ApiInlineOk('Invite record + one-time token (share the token with the invitee).', {
+    invite: {
+      id: 'cm0inv1',
+      email: 'new@shop.com',
+      role: 'agent',
+      expiresAt: '2026-06-06T00:00:00.000Z',
+    },
+    token: 'inv_2k3j4h5g6f7d8s9a',
+  })
   async createInvite(
     @OrgId() orgId: string,
     @CurrentUser() user: AuthenticatedContext,
@@ -64,14 +94,18 @@ export class TeamController {
       email: parsed.email,
       role: parsed.role as MemberRole,
     });
-    // The plain token is returned ONCE — the caller must share it with the
-    // invitee (out-of-band: email/Slack/Whatsapp). DB only stores the hash.
     return { invite, token };
   }
 
   @Delete('invites/:id')
-  @ApiOperation({ summary: 'Revoke a pending invite' })
+  @ApiOperation({
+    summary: 'Revoke a pending invite (owner / admin only)',
+    description: 'Marks the invite as revoked so the token can no longer be redeemed.',
+  })
   @Roles('owner', 'admin')
+  @ApiParam({ name: 'id', description: 'Invite ID to revoke.' })
+  @ApiInlineOk('Revoked.', { ok: true })
+  @ApiNotFound('Invite')
   revokeInvite(
     @OrgId() orgId: string,
     @CurrentUser() user: AuthenticatedContext,
@@ -81,8 +115,15 @@ export class TeamController {
   }
 
   @Delete('members/:id')
-  @ApiOperation({ summary: 'Remove a member from the org' })
+  @ApiOperation({
+    summary: 'Remove a member from the org (owner / admin only)',
+    description:
+      'Drops the membership row; the user keeps their account but loses access to this org.',
+  })
   @Roles('owner', 'admin')
+  @ApiParam({ name: 'id', description: 'Membership ID to remove.' })
+  @ApiInlineOk('Removed.', { ok: true })
+  @ApiNotFound('Member')
   removeMember(
     @OrgId() orgId: string,
     @CurrentUser() user: AuthenticatedContext,
@@ -93,7 +134,15 @@ export class TeamController {
   }
 
   @Patch('assign')
-  @ApiOperation({ summary: 'Assign a conversation to a team member' })
+  @ApiOperation({
+    summary: 'Assign (or un-assign) a conversation to a team member',
+    description:
+      'The assignee chip then renders on that conversation row. Pass `assigneeUserId: null` ' +
+      'to clear the assignment.',
+  })
+  @ApiZodBody('AssignConversationBody', 'Which conversation, which user.')
+  @ApiInlineOk('Assigned.', { ok: true, conversationId: 'cm0conv1', assigneeUserId: 'cm0u2' })
+  @ApiNotFound('Conversation or user')
   assignConversation(
     @OrgId() orgId: string,
     @CurrentUser() user: AuthenticatedContext,

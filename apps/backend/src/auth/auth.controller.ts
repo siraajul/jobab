@@ -9,11 +9,19 @@ import {
   Res,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { PrismaService } from '../prisma/prisma.service';
 import { EnvService } from '../config/env.service';
+import {
+  ApiAuthCookie,
+  ApiAuthErrors,
+  ApiBadRequest,
+  ApiInlineOk,
+  ApiZodBody,
+  ApiZodOk,
+} from '../swagger/decorators';
 import { AuthService } from './auth.service';
 import { SESSION_COOKIE, SessionService } from './session.service';
 import { Public } from './auth.guard';
@@ -53,7 +61,21 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Log in with email + password' })
+  @ApiOperation({
+    summary: 'Log in with email + password',
+    description:
+      'Starts a session. The server sets a `session` cookie (HttpOnly, SameSite=Lax) and a ' +
+      '`jobab_org` cookie pointing at your first org. Browsers persist these automatically; ' +
+      'with curl pass `-c cookies.txt -b cookies.txt`.',
+  })
+  @ApiZodBody('LoginBody', 'Email + password.')
+  @ApiInlineOk('User profile + memberships. The session cookie is set on the response.', {
+    userId: 'cm0user123',
+    email: 'owner@shop.com',
+    name: 'Owner Name',
+    memberships: [{ id: 'cm0mem123', organizationId: 'cm0org123', role: 'owner' }],
+  })
+  @ApiBadRequest('Bad email / password.')
   async login(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
     const { email, password } = LoginBody.parse(body);
     const { user, cookie } = await this.auth.login(email, password);
@@ -67,7 +89,21 @@ export class AuthController {
   @Public()
   @Post('sign-up')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Create a new organization with an owner account' })
+  @ApiOperation({
+    summary: 'Create a new organisation with an owner account',
+    description:
+      'One-shot registration: creates an organisation, an owner user, the membership link, ' +
+      'and an audit event in a single transaction. Sets the session cookie so the caller is ' +
+      'immediately logged in.',
+  })
+  @ApiZodBody('SignUpBody', 'Owner credentials + organisation name.')
+  @ApiInlineOk('Newly-created user with their initial owner membership.', {
+    userId: 'cm0user123',
+    email: 'owner@newshop.com',
+    name: 'Owner Name',
+    memberships: [{ id: '', organizationId: 'cm0org123', role: 'owner' }],
+  })
+  @ApiBadRequest('Email already registered.')
   async signUp(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
     const data = SignUpBody.parse(body);
     const existing = await this.prisma.user.findUnique({
@@ -119,7 +155,19 @@ export class AuthController {
 
   @Public()
   @Get('invites/inspect')
-  @ApiOperation({ summary: 'Preview an invite (returns org name + role) before accepting' })
+  @ApiOperation({
+    summary: 'Preview an invite before accepting',
+    description:
+      'Used by the accept-invite landing page to show "Join {Org} as {role}" without ' +
+      'forcing the user to commit. Public — no session required.',
+  })
+  @ApiQuery({
+    name: 'token',
+    description: 'The invite token from the email link.',
+    example: 'inv_abc123',
+  })
+  @ApiZodOk('InvitePreview', 'What the invite is for.')
+  @ApiBadRequest('Invite invalid, already accepted, or expired.')
   async inspectInvite(@Req() req: Request) {
     const { token } = InspectInviteQuery.parse(req.query);
     const hash = this.session.hashInviteToken(token);
@@ -144,7 +192,12 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Clear the session cookie' })
+  @ApiAuthCookie()
+  @ApiOperation({
+    summary: 'Clear the session cookie',
+    description: 'Idempotent. Always returns `{ ok: true }` even if no session existed.',
+  })
+  @ApiInlineOk('Cookies cleared.', { ok: true })
   logout(@Res({ passthrough: true }) res: Response) {
     res.cookie(SESSION_COOKIE, '', { httpOnly: true, path: '/', maxAge: 0 });
     res.cookie('jobab_org', '', { httpOnly: true, path: '/', maxAge: 0 });
@@ -152,7 +205,20 @@ export class AuthController {
   }
 
   @Get('me')
-  @ApiOperation({ summary: 'Current user + memberships' })
+  @ApiAuthCookie()
+  @ApiAuthErrors()
+  @ApiOperation({
+    summary: 'Current user + memberships',
+    description:
+      'Use this to bootstrap the dashboard: avatar, name, the list of orgs the user belongs ' +
+      'to (so you can render an org switcher).',
+  })
+  @ApiInlineOk('User profile + memberships.', {
+    userId: 'cm0user123',
+    email: 'owner@shop.com',
+    name: 'Owner Name',
+    memberships: [{ id: 'cm0mem123', organizationId: 'cm0org123', role: 'owner' }],
+  })
   async me(@Req() req: Request) {
     const cookie = req.cookies?.[SESSION_COOKIE];
     const user = await this.auth.loadFromSession(cookie);
@@ -162,7 +228,17 @@ export class AuthController {
 
   @Post('active-org')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Switch the active organization (must be a member)' })
+  @ApiAuthCookie()
+  @ApiAuthErrors()
+  @ApiOperation({
+    summary: 'Switch the active organisation',
+    description:
+      'Updates the `jobab_org` cookie. The next request will be scoped to the new org. ' +
+      'Returns `400` if you are not a member of that org.',
+  })
+  @ApiZodBody('SetActiveOrgBody', 'Org you want to switch to.')
+  @ApiInlineOk('Org switched.', { ok: true, organizationId: 'cm0org123' })
+  @ApiBadRequest('You are not a member of that organisation.')
   async setActiveOrg(
     @Body() body: unknown,
     @Req() req: Request,
@@ -182,7 +258,16 @@ export class AuthController {
   @Public()
   @Post('accept-invite')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Create a user account by accepting an invite' })
+  @ApiOperation({
+    summary: 'Accept an org invite and create / update the user',
+    description:
+      'If the invitee already has an account we update its name + password; otherwise we ' +
+      'create one. Either way we attach them to the org with the role from the invite and ' +
+      'log them in (session cookie set).',
+  })
+  @ApiZodBody('AcceptInviteBody', 'Invite token + the new account credentials.')
+  @ApiInlineOk('Invite accepted, session set.', { ok: true })
+  @ApiBadRequest('Invite invalid, expired, or already accepted.')
   async acceptInvite(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
     const { token, name, password } = AcceptInviteBody.parse(body);
     const hash = this.session.hashInviteToken(token);

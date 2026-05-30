@@ -160,12 +160,116 @@ reg(
 );
 
 // ---------------------------------------------------------------------------
+// Auth — a couple of body / response shapes that live inline in the controller.
+// We mirror them here so Swagger shows real schemas instead of `unknown`.
+// ---------------------------------------------------------------------------
+reg(
+  'SetActiveOrgBody',
+  z.object({
+    organizationId: z
+      .string()
+      .min(1)
+      .openapi({ example: 'cm0org123', description: 'Org you belong to.' }),
+  }),
+  'Switch the active organisation for the current session.',
+);
+
+// ---------------------------------------------------------------------------
+// Team
+// ---------------------------------------------------------------------------
+reg(
+  'TeamInviteBody',
+  z.object({
+    email: z.string().email().openapi({ example: 'agent@shop.com' }),
+    role: z.enum(['owner', 'admin', 'agent']).openapi({ example: 'agent' }),
+  }),
+  'Send an invite to join the org with a given role.',
+);
+reg(
+  'AssignConversationBody',
+  z.object({
+    conversationId: z.string().min(1).openapi({ example: 'cm0conv123' }),
+    assigneeUserId: z
+      .string()
+      .nullable()
+      .openapi({ example: 'cm0user456', description: 'User ID, or `null` to un-assign.' }),
+  }),
+  'Assign (or un-assign) a conversation to a team member.',
+);
+
+// ---------------------------------------------------------------------------
+// Comments
+// ---------------------------------------------------------------------------
+reg(
+  'UpdateCommentRuleBody',
+  z.object({
+    replyMode: z.enum(['ai', 'manual', 'off']).optional().openapi({
+      description: 'How this comment intent is handled. `off` mutes automation entirely.',
+    }),
+    publicTemplate: z
+      .string()
+      .max(500)
+      .nullable()
+      .optional()
+      .openapi({ description: 'Public reply template, or `null` to clear it.' }),
+    privateAllowed: z
+      .boolean()
+      .optional()
+      .openapi({ description: 'Whether the bot may DM the commenter privately.' }),
+  }),
+  'Partial update of a per-intent comment automation rule.',
+);
+
+// ---------------------------------------------------------------------------
+// Push tokens (mobile / web)
+// ---------------------------------------------------------------------------
+reg(
+  'RegisterPushTokenBody',
+  z.object({
+    token: z
+      .string()
+      .min(1)
+      .openapi({ example: 'ExponentPushToken[xxxx]', description: 'Expo / FCM / APNs token.' }),
+    platform: z.enum(['ios', 'android']).openapi({ example: 'ios' }),
+  }),
+  'Register a device push-notification token for the current user.',
+);
+reg(
+  'DeletePushTokenBody',
+  z.object({
+    token: z.string().min(1).openapi({ example: 'ExponentPushToken[xxxx]' }),
+  }),
+  'Drop a previously-registered device push token (sign-out).',
+);
+
+// ---------------------------------------------------------------------------
 // Webhooks
 // ---------------------------------------------------------------------------
 reg(
   'FakeMessageBody',
   FakeMessageBodySchema,
   'Dev-only: inject a fake customer DM through the full agent loop.',
+);
+reg(
+  'FakeCommentBody',
+  z.object({
+    pageId: z.string().min(1).openapi({ example: 'page_rongdhonu' }),
+    postId: z.string().min(1).openapi({ example: 'post_123' }),
+    commenterId: z.string().min(1).openapi({ example: 'fb_user_42' }),
+    commenterName: z.string().optional().openapi({ example: 'Tahmina' }),
+    text: z.string().min(1).max(4000).openapi({ example: 'price koto?' }),
+  }),
+  'Dev-only: inject a fake Facebook/Instagram comment through the full handler.',
+);
+reg(
+  'DataDeletionBody',
+  z.object({
+    signed_request: z
+      .string()
+      .min(1)
+      .openapi({ description: 'Meta-signed deletion request (base64url-encoded JWT).' }),
+  }),
+  'Meta data-deletion callback payload (Facebook App Review requirement).',
 );
 
 // ---------------------------------------------------------------------------

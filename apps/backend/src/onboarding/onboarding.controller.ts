@@ -5,8 +5,17 @@ import { ConnectPageBodySchema } from '@jobab/shared';
 import { OrgId } from '../auth/auth.guard';
 import { EncryptionService } from '../common/encryption/encryption.service';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  ApiAuthCookie,
+  ApiAuthErrors,
+  ApiInlineOk,
+  ApiZodBody,
+  ApiZodOk,
+} from '../swagger/decorators';
 
 @ApiTags('onboarding')
+@ApiAuthCookie()
+@ApiAuthErrors()
 @Controller('onboarding')
 export class OnboardingController {
   constructor(
@@ -14,12 +23,14 @@ export class OnboardingController {
     private readonly encryption: EncryptionService,
   ) {}
 
-  /**
-   * Snapshot of where the merchant is in the onboarding flow. The UI drives a
-   * checklist off this; once all three steps are `true` the org is ready.
-   */
   @Get('status')
-  @ApiOperation({ summary: 'Onboarding checklist status' })
+  @ApiOperation({
+    summary: 'Onboarding checklist status',
+    description:
+      'Snapshot of where the merchant is in the connect-pages → catalog → AI-instructions flow. ' +
+      'The dashboard renders a checklist off this; once all three are `true` the org is live.',
+  })
+  @ApiZodOk('OnboardingStatus', 'Booleans + supporting counters.')
   async status(@OrgId() orgId: string) {
     const [org, productCount, pageCount] = await Promise.all([
       this.prisma.organization.findUniqueOrThrow({ where: { id: orgId } }),
@@ -38,7 +49,20 @@ export class OnboardingController {
   }
 
   @Post('pages')
-  @ApiOperation({ summary: 'Connect a Facebook / Instagram / WhatsApp page' })
+  @ApiOperation({
+    summary: 'Connect a Facebook / Instagram / WhatsApp page',
+    description:
+      'Upserts a `Page` row. The access token is encrypted at rest with `ENCRYPTION_KEY` so ' +
+      'merchant credentials never appear in DB dumps in plaintext.',
+  })
+  @ApiZodBody('ConnectPageBody', 'Page ID + access token + platform.')
+  @ApiInlineOk('The created or updated Page row.', {
+    id: 'cm0page1',
+    platform: 'facebook',
+    externalPageId: 'page_rongdhonu',
+    status: 'connected',
+    webhookSubscribed: false,
+  })
   async connectPage(@OrgId() orgId: string, @Body() body: unknown) {
     const { externalPageId, accessToken, platform } = ConnectPageBodySchema.parse(body);
     const encrypted = this.encryption.encrypt(accessToken);
