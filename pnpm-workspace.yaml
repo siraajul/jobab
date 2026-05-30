@@ -7,6 +7,17 @@ packages:
 # coherent.
 overrides:
   '@types/react': 18.3.3
+  # Expo SDK 51 requires metro@0.80.x. Without these overrides, nativewind@4.2.4
+  # pulls metro@0.84.4, pnpm hoists it, and Expo's CLI dies with
+  # ERR_PACKAGE_PATH_NOT_EXPORTED on metro-cache/src/stores/FileStore.
+  metro: 0.80.12
+  metro-cache: 0.80.12
+  metro-config: 0.80.12
+  metro-core: 0.80.12
+  metro-resolver: 0.80.12
+  metro-runtime: 0.80.12
+  metro-source-map: 0.80.12
+  metro-transform-worker: 0.80.12
 
 # Allow build scripts for trusted packages we depend on. Each entry is
 # scrutinised when added — only add packages we actually trust to run code
