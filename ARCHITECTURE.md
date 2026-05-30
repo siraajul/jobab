@@ -1,55 +1,89 @@
 # Jobab architecture
 
-**Read this before touching code.** If you understand this single document you
-can navigate any file in the repo, predict where a new feature should live,
-and add a route end-to-end without grepping.
+This is the map. If you read it once you'll know where every kind of code
+lives, why it's there, and where new code should go. The patterns in this
+doc aren't aspirational — every one is already in the repo, with file
+paths you can open in another tab.
 
-It's not theory — every pattern below is already used in the codebase, with
-file references you can open in another tab.
+The repo isn't huge but it has real machinery. Three runtime processes, an
+AI agent loop, a payment integration, two webhook channels, a queue, a
+vector database. The structure exists so all of that stays readable as
+features get added.
 
 ---
 
-## Table of contents
+## Contents
 
 - [The 30-second tour](#the-30-second-tour)
+- [The shape and why it's that shape](#the-shape-and-why-its-that-shape)
 - [System diagram](#system-diagram)
 - [The agent loop](#the-agent-loop)
-- [Tech stack](#tech-stack)
+- [Tech stack at a glance](#tech-stack-at-a-glance)
 - [Monorepo layout](#monorepo-layout)
 - [Data model](#data-model)
-- [The single source of truth: `@jobab/shared`](#the-single-source-of-truth-jobabshared)
-- [Backend pattern: NestJS feature modules](#backend-pattern-nestjs-feature-modules)
-- [Frontend pattern: `page` → `Client` → `useState` → sections](#frontend-pattern-page--client--usestate--sections)
+- [The contract: `@jobab/shared`](#the-contract-jobabshared)
+- [Backend pattern: feature modules](#backend-pattern-feature-modules)
+- [Frontend pattern: page → Client → useState → sections](#frontend-pattern-page--client--usestate--sections)
 - [How data flows end-to-end](#how-data-flows-end-to-end)
-- [Conventions cheat-sheet](#conventions-cheat-sheet)
+- [Conventions](#conventions)
 - [Adding a new feature in 7 steps](#adding-a-new-feature-in-7-steps)
-- [What lives where — every directory explained](#what-lives-where--every-directory-explained)
+- [Directory reference](#directory-reference)
 
 ---
 
 ## The 30-second tour
 
-Three packages, two of them apps:
+Three packages. Two of them are real apps; one is a contract.
 
 ```
-apps/backend  →  NestJS API + agent worker (Postgres + Redis + Groq LLM)
-apps/web      →  Next.js 14 dashboard (the inbox merchants use)
-packages/shared → Zod schemas + types — the contract both apps depend on
+apps/backend       NestJS API + agent worker (Postgres + Redis + Groq LLM)
+apps/web           Next.js 14 dashboard (the inbox merchants use)
+apps/mobile        Expo scaffold (Phase 2)
+apps/docs          VitePress book site (this and the rest of /docs)
+packages/shared    Zod schemas that backend and web both depend on
 ```
 
-The backend is the **only** place that talks to the database, the LLM, Meta,
-and bKash. The web app talks to the backend over REST + a session cookie.
-Mobile (`apps/mobile`) is scaffolded but optional.
+The backend is the only process that talks to the database, the LLM, Meta,
+and bKash. The web app talks to the backend over REST with a session cookie.
+The mobile app is a scaffold — we ship it when the web app and backend are
+proven.
 
-Three runtime processes during dev:
+During dev there are three processes:
 
 ```
-backend API           — answers HTTP, validates webhooks, queues agent work
-backend worker        — drains the BullMQ queue, runs the LLM loop, replies
-web (Next.js)         — renders the dashboard, talks only to the API
+backend API           answers HTTP, validates webhooks, queues agent work
+backend worker        drains the BullMQ queue, runs the LLM loop, sends replies
+web (Next.js)         renders the dashboard, talks only to the API
 ```
 
-Postgres + Redis run in Docker. That's the whole picture.
+Postgres and Redis run in Docker (`pnpm infra:up`). That's the whole picture.
+
+---
+
+## The shape and why it's that shape
+
+You might wonder why the backend is split in two — an API and a worker — and
+why there's a queue between them. It's because of how Meta works.
+
+When a customer messages a Facebook page, Meta calls your webhook URL and
+expects a `200 OK` back **within 200 milliseconds**. If you don't answer
+fast enough, Meta retries. The AI reply takes 2–5 seconds (LLM call + tool
+calls + Send API). If we tried to do the AI work inside the webhook
+handler, every reply would be late and Meta would retry the same message
+two or three times.
+
+So the API does only two things per customer DM: store the message, and
+push a job onto a Redis queue. It answers Meta in ~20ms. The agent worker
+sits beside the queue, pulls jobs out, calls the LLM, executes tools,
+sends the reply. If the worker is slow or crashes, the queue just builds
+up; nothing is lost.
+
+The web dashboard never touches the queue or the LLM. It only reads and
+writes via the API. That keeps the surface small: one place to change
+auth, one place to change validation, one place to instrument metrics.
+
+This is the whole architectural idea. The rest of this doc is just where
+each piece of that idea lives in the code.
 
 ---
 
@@ -71,15 +105,18 @@ flowchart LR
     catalog[Catalog adapters<br/>CSV / Shopify / Woo] --> api
 ```
 
-Two backend processes share one codebase:
-
-- **API** (`start:dev`) — webhooks, the dashboard REST API, auth.
-- **Agent worker** (`start:worker:dev`) — drains the BullMQ queue and runs the
-  agent loop, so a slow LLM call never blocks an HTTP request.
+Two backend processes share one codebase. The API entry is `src/main.ts`;
+the worker entry is `src/agent/worker.ts`. They import the same NestJS
+modules and the same Prisma client. Only the boot script differs.
 
 ---
 
 ## The agent loop
+
+This is what happens between "customer message arrives" and "reply sent."
+It's a loop, not a one-shot call, because the AI may need to use tools
+(look up a product, check stock, save the order) before it can compose
+the final reply.
 
 ```
 customer message
@@ -99,20 +136,34 @@ execute tool ─ search_catalog        (top-N in-stock products)
               ─ check_stock           (live qty + price for a variant)
               ─ match_product_by_image(visual ANN → describe-then-search → vision LLM)
               ─ save_customer_detail  (grounded against the customer's own messages)
-              ─ create_order          (order guardrail: fields · stock · total · duplicate)
+              ─ create_order          (order guardrail: fields, stock, total, duplicate)
               ─ handoff_to_human      (classified: complaint / refund / payment_dispute / …)
     │
     └──▶ append result, re-invoke
 ```
 
-Every run is recorded as an `AgentRun` (model, tokens, cost, latency, the tool
-calls it made) — that's what powers the inbox Activity feed and the Analytics
-page. The loop bails immediately if a conversation is in `human` or `closed`
-status, so a merchant takeover is always respected.
+The loop terminates when the LLM returns a final reply (no more tool
+calls) or after `LLM_MAX_ITERATIONS` (a safety cap). Every run is
+recorded as an `AgentRun` row — model used, tokens consumed, latency,
+cost, the sequence of tools called. That's the data behind the inbox's
+Activity panel and the Analytics page.
+
+The loop respects merchant takeover. If a conversation's `status` is
+`human` or `closed`, the worker bails immediately without calling the
+LLM. So when a merchant clicks "take over" in the inbox, the AI stops
+replying on that thread — even if a job is mid-flight in the queue.
+
+If you're adding a new tool: it's a function in `agent/tools/`, registered
+on the agent in `agent.service.ts`. The LLM picks which tool to call from
+the JSON schema you provide. Treat each tool as a small, focused
+operation; the LLM does the orchestration.
 
 ---
 
-## Tech stack
+## Tech stack at a glance
+
+This is the headline list. The deep "why we picked each library" lives in
+[docs/build/3-tech-stack.md](docs/build/3-tech-stack.md).
 
 | Layer         | Choice                                                                 |
 | ------------- | ---------------------------------------------------------------------- |
@@ -135,85 +186,108 @@ status, so a merchant takeover is always respected.
 ```
 .
 ├── apps/
-│   ├── backend/        NestJS · Prisma · BullMQ
-│   ├── web/            Next.js 14 (App Router) + Tailwind
-│   └── mobile/         React Native (scaffolded)
+│   ├── backend/        NestJS · Prisma · BullMQ — the API and the worker
+│   ├── web/            Next.js 14 (App Router) + Tailwind — the dashboard
+│   ├── mobile/         Expo SDK 51 — scaffold for Phase 2
+│   └── docs/           VitePress wrapper for /docs (the book site)
 ├── packages/
-│   └── shared/         Zod schemas + types shared between backend and web
-├── docs/               ADRs, architecture notes, runbooks
+│   └── shared/         Zod schemas + types both apps depend on
+├── docs/               The actual markdown source (renders on GitHub too)
 ├── design-prototype/   Original Claude Design prototype, kept as reference
 ├── docker-compose.yml  Postgres (pgvector) + Redis
-└── ARCHITECTURE.md     ← you are here
+└── ARCHITECTURE.md     this file
 ```
 
-**pnpm workspaces.** Adding `@jobab/shared` to either app uses
-`"@jobab/shared": "workspace:*"` — pnpm symlinks the source. Edit a schema in
-one place and both apps see it.
+We use **pnpm workspaces** with strict isolation — no app can accidentally
+import from another app. The only cross-app sharing is via
+`@jobab/shared`, declared as `"@jobab/shared": "workspace:*"` in each
+app's package.json. pnpm symlinks the source, so editing a schema in
+`packages/shared/src/` updates both apps instantly without a publish step.
 
 ---
 
 ## Data model
 
-Key Prisma models (`apps/backend/prisma/schema.prisma`):
+The Prisma schema is in `apps/backend/prisma/schema.prisma`. Here are the
+models and how they relate, in roughly the order you'd discover them
+working in the app.
 
 - **Organization** — the shop. Holds AI instructions, catalog source, status.
-- **User / Membership / Invite / AuditEvent** — auth + RBAC (`owner` / `admin` /
-  `agent`).
+  Everything else is scoped to an org.
+- **User**, **Membership**, **Invite**, **AuditEvent** — auth and RBAC.
+  Three roles: `owner`, `admin`, `agent`. Memberships join users to orgs;
+  invites are accepted by clicking a tokenised link.
 - **Page** — a connected channel (`facebook` / `instagram` / `whatsapp`).
-- **Product / ProductVariant** — catalog, with `textEmbedding` + `imageEmbedding`
-  (pgvector) for search and photo matching.
-- **Conversation** — a customer thread. Carries channel, assignee, captured
-  `customerName/Phone/Address`, `status` (`bot` → `needs_human` → `human` →
-  `closed`), and `handoffCategory` / `handoffReason` for complaint triage.
+  One organization can connect many pages.
+- **Product**, **ProductVariant** — the catalog. Each row carries
+  `textEmbedding` and `imageEmbedding` (pgvector columns) so the AI can
+  match a customer's photo or text against the catalog.
+- **Conversation** — a customer thread. Carries channel, assignee,
+  captured customer name/phone/address, status (`bot` → `needs_human` →
+  `human` → `closed`), and complaint metadata for the triage flow.
 - **Message** — in/out, sender (`customer` / `agent` / `human`), JSON
-  attachments (images + AI match candidates).
-- **Tag / ConversationTag** — reusable colour-coded labels applied to chats.
-- **Note** — internal merchant notes on a conversation.
-- **Order** — items, totals, `paymentStatus`, `status` (created → confirmed →
-  shipped → delivered → cancelled).
-- **Comment / CommentRule** — social comments + per-intent automation.
-- **AgentRun** — per-run model/token/cost/latency/tool-call telemetry.
-- **DeviceToken** — web-push registrations.
+  attachments (images and the AI's match-candidate suggestions).
+- **Tag**, **ConversationTag** — colour-coded labels you can apply across
+  conversations.
+- **Note** — internal merchant notes on a conversation (never sent to the
+  customer).
+- **Order** — items, totals, payment status, lifecycle status (`created`
+  → `confirmed` → `shipped` → `delivered` → `cancelled`).
+- **Comment**, **CommentRule** — social-post comments and per-intent
+  automation rules (reply with X if comment intent is "price").
+- **AgentRun** — per-run telemetry from the agent loop. Model, tokens,
+  latency, cost, the tools it called.
+- **DeviceToken** — web-push registrations for merchant notifications.
+
+If you're adding a model, follow the same pattern: organization-scoped,
+include `createdAt` and `updatedAt`, encrypt anything secret with the
+encryption service.
 
 ---
 
-## The single source of truth: `@jobab/shared`
+## The contract: `@jobab/shared`
 
-This is the most important idea in the codebase. Everything else falls out of it.
+This is the most important idea in the codebase. Everything else falls
+out of it.
 
-The web app and the backend both need to agree on what a `Conversation` looks
-like, what `POST /auth/login` accepts, what the order status enum contains, etc.
+The web app and the backend both need to agree on what a `Conversation`
+looks like, what `POST /auth/login` accepts, what the order status enum
+contains. If those shapes get out of sync, you get the classic full-stack
+bug: backend returns a field the frontend doesn't expect, or vice versa.
 
-Hand-mirroring those shapes is a recipe for drift, so we put them in
-`packages/shared/src/` as **Zod schemas**:
+Instead of hand-mirroring, we put every cross-network shape in
+`packages/shared/src/` as a **Zod schema**:
 
-- `auth.ts` · `LoginBodySchema`, `SignUpBodySchema`, `AcceptInviteBodySchema`
-- `conversation.ts` · `ConversationSchema`, `MessageSchema`, `TagSchema`, `NoteSchema`
-- `order.ts` · `OrderSchema`, `OrderListItemSchema`, `SetOrderStatusBodySchema`
-- `product.ts` · `ProductSchema`, `ProductVariantSchema`, `*SyncBodySchema`
-- `enums.ts` · every status / role / platform enum
-- … and so on per domain
+- `auth.ts` — login, sign-up, accept-invite bodies
+- `conversation.ts` — conversations, messages, tags, notes
+- `order.ts` — orders, status updates
+- `product.ts` — products, variants, the CSV/Shopify/Woo sync bodies
+- `enums.ts` — every status, role, platform enum
 
-The backend imports these and calls `Schema.parse(body)` to validate at runtime
-(see `conversations/conversations.controller.ts`).
+Three places consume those schemas:
 
-The web imports the inferred TypeScript types
-(`type Conversation = z.infer<typeof ConversationSchema>`) for compile-time
-safety.
+1. **Backend** imports them and calls `Schema.parse(body)` to validate
+   every incoming request. If validation fails, NestJS returns a 422 with
+   the Zod error. See `conversations/conversations.controller.ts` for the
+   pattern.
+2. **Web app** imports the inferred TypeScript type:
+   `type Conversation = z.infer<typeof ConversationSchema>`. Same shape,
+   compile-time enforced.
+3. **Swagger UI** picks them up via `src/swagger/zod-registry.ts`, which
+   turns each shared schema into an OpenAPI `components/schemas/<Name>`.
+   The controller decorators reference them via `$ref`, so the API
+   explorer at `/docs` is always in sync with the actual code.
 
-The Swagger UI imports them too — `apps/backend/src/swagger/zod-registry.ts`
-turns every shared schema into an OpenAPI `components/schemas/<Name>`, which
-the controller decorators reference via `$ref`. Three layers, one source.
-
-**Rule:** if a shape crosses the network, it lives in `@jobab/shared`. If you
-need to add a field, edit it here once and propagate.
+The rule is short: **if a shape crosses the network, it lives in
+`@jobab/shared`**. To add a field, edit it there once and watch the
+TypeScript errors guide you to every place that needs updating.
 
 ---
 
-## Backend pattern: NestJS feature modules
+## Backend pattern: feature modules
 
-`apps/backend/src/` is one folder per feature, each with the same 3 files
-(plus tests when relevant):
+`apps/backend/src/` is one folder per feature. Each folder has the same
+three files (plus tests when there's logic worth testing):
 
 ```
 conversations/
@@ -223,23 +297,32 @@ conversations/
   conversations.service.spec.ts (optional) Jest unit tests, colocated
 ```
 
-That's it. No `dto/`, `entities/`, `repositories/` ceremony — Zod handles DTOs,
-Prisma handles entities, and the service IS the repository.
+That's it. No `dto/`, `entities/`, `repositories/` ceremony — Zod handles
+DTOs, Prisma handles entities, and the service IS the repository. When
+you open a feature folder the file structure tells you everything.
 
-### What goes in each file
+**What goes in each file:**
 
-| File              | Owns                                                                                     | Doesn't own                                    |
-| ----------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `*.controller.ts` | URL routing, Zod parsing (`Schema.parse(body)`), Swagger decorators, calling the service | DB queries, business rules, external API calls |
-| `*.service.ts`    | Business logic, transactions, calling Prisma + other services                            | HTTP concerns, request parsing                 |
-| `*.module.ts`     | The Nest `@Module()` that wires controller + service + imports                           | Anything else                                  |
+- The **controller** owns URL routing, Zod parsing
+  (`Schema.parse(body)`), Swagger decorators, and calling the service.
+  It does not touch the database, never contains business rules, and
+  never calls external APIs.
+- The **service** owns business logic, transactions, Prisma calls, and
+  calling other services. It does not parse HTTP bodies and does not
+  know about request shapes.
+- The **module** owns the Nest `@Module()` decorator that wires the
+  controller and service into DI. That's it.
+
+The split means a single feature is always three predictable files. New
+contributors can guess where anything lives.
 
 ### Cross-cutting concerns
 
-Not every folder is a feature. Some are infrastructure:
+Not every folder is a feature. Some are infrastructure that other
+features depend on:
 
 ```
-common/          Shared filters, decorators, encryption
+common/          shared filters, decorators, encryption service
 config/          Zod-validated env loader (refuses to boot on missing keys)
 prisma/          PrismaService singleton; one client per process
 observability/   Sentry + Langfuse + pino integration
@@ -247,46 +330,54 @@ queue/           BullMQ producer / consumer wiring
 swagger/         Zod → OpenAPI bridge + reusable @ApiX decorators
 ```
 
+These are marked `@Global()` in their modules so any feature can inject
+their services without explicit imports.
+
 ### Two processes, one codebase
 
-The API (`pnpm start:dev`) and the agent worker (`pnpm start:worker:dev`)
-share the same NestJS module graph but boot from different entry points:
+The API process and the agent worker process share the same NestJS
+module graph but boot from different entry files:
 
 ```
-src/main.ts       → starts the HTTP server (api process)
-src/agent/worker.ts → starts the BullMQ consumer (worker process)
+src/main.ts          starts the HTTP server (the api process)
+src/agent/worker.ts  starts the BullMQ consumer (the worker process)
 ```
 
-A slow LLM call never blocks an HTTP request because the queue sits between them.
+Both processes have the same access to Prisma, the encryption service,
+and every feature module. The worker just doesn't open an HTTP port.
+This split lets a slow LLM call never block an HTTP request.
 
 ---
 
-## Frontend pattern: `page` → `Client` → `useState` → sections
+## Frontend pattern: `page → Client → useState → sections`
 
-Every route in `apps/web/app/<route>/` follows the same four-file shape. Once
-you internalise it you can navigate any page in the app:
+Every route in `apps/web/app/<route>/` follows the same four-file shape.
+Once you internalise it you can navigate any page in the app.
 
 ```
 app/<route>/
   page.tsx              server entry — fetches initial data, returns <RouteClient initial={...} />
-  <Route>Client.tsx     the orchestrator — layout, view-switching, prop wiring
+  <Route>Client.tsx     the orchestrator — layout, view switching, prop wiring
   use<Route>State.ts    all hooks, fetches, mutations for this route
-  <Section>.tsx         per-section UI; each does ONE thing
+  <Section>.tsx         per-section UI; each does one thing
 ```
 
 ### Why this shape
 
-- **`page.tsx` is dumb.** Server-side data fetch only. It hands the result to
-  the client component. Keeps the route declarative.
-- **`<Route>Client.tsx` is the orchestrator.** It owns layout, view switching
-  (e.g. mobile/desktop), and prop wiring. It should be < 200 LOC. If it grows,
-  extract another section.
-- **`use<Route>State.ts` is the state machine.** All `useState`, all `useEffect`,
-  all `usePoll`, all `api.*` calls live here. The orchestrator + sections call
-  into it; they never touch the API directly. Easy to grep "how is this
-  mutated?" — it's in one file.
-- **Each `<Section>.tsx` is stateless.** Receives the slice of state it needs
-  as props, fires callbacks up. Easy to test, easy to reuse, easy to delete.
+- **`page.tsx` is dumb.** Server-side data fetch only. It hands the
+  result to the client component. Keeps the route declarative and lets
+  Next.js do its SSR thing.
+- **`<Route>Client.tsx` is the orchestrator.** It owns layout, view
+  switching (e.g. mobile vs desktop), and prop wiring. Stays under 200
+  lines. If it grows, you've spotted a missing section component.
+- **`use<Route>State.ts` is the state machine.** All `useState`, all
+  `useEffect`, all `usePoll`, all `api.*` calls live here. The
+  orchestrator and the sections call into it; they never touch the API
+  directly. When you're debugging "how did this value get mutated?" the
+  answer is always in this one file.
+- **Each `<Section>.tsx` is stateless.** Receives the slice of state it
+  needs as props. Fires callbacks up. Easy to test, easy to reuse, easy
+  to delete.
 
 ### A worked example: `app/orders/`
 
@@ -300,12 +391,12 @@ app/orders/
   PrintableInvoice.tsx  section (215 LOC): print-only invoice layout
 ```
 
-This file used to be 598 LOC of one mega-component. The split makes the same
-behaviour rendering-identical but each file has a single job.
+This route used to be one 598-line mega-component. The split renders
+identically but each file has a single job.
 
 ### Another: `app/onboarding/`
 
-A 7-step wizard, one file per step:
+A multi-step wizard, one file per step:
 
 ```
 app/onboarding/
@@ -315,19 +406,19 @@ app/onboarding/
   Primary.tsx           shared brand submit button
   ShopNameStep.tsx      ┐
   ConnectPageStep.tsx   │
-  CatalogStep.tsx       │ one focused component per step
-  AiInstructionsStep.tsx│
+  CatalogStep.tsx       │
+  AiInstructionsStep.tsx│ one focused component per step
   WhatsAppStep.tsx      │
   TestStep.tsx          │
   DoneStep.tsx          ┘
 ```
 
-The orchestrator's job is a `switch (step)` rendering the right step
-component with the right props from the hook. That's all.
+The orchestrator's whole job is a `switch (step)` rendering the right
+step component with the right props from the hook. That's it.
 
-### Shared web bits
+### Shared web pieces
 
-Cross-route reusable pieces live one level up:
+Cross-route reusable pieces live one level up from the routes:
 
 ```
 components/
@@ -335,57 +426,60 @@ components/
   layout/     AppShell, NavRail, AvatarMenu
   shared/     Toast, EmptyState, Jamdani (brand mark), ConnectivityBanner
 lib/
-  api.ts      a typed `api` object — every endpoint is a method
-  types.ts    re-exports of @jobab/shared types
-  use-poll.ts setInterval as a hook with cleanup
+  api.ts          a typed `api` object — every endpoint is a method
+  types.ts        re-exports of @jobab/shared types
+  use-poll.ts     setInterval as a hook with cleanup
   use-tab-badge.ts
-  cn.ts       classnames helper
+  cn.ts           classnames helper (clsx + tailwind-merge)
 ```
 
-If you find yourself prop-drilling a primitive through 3 routes, hoist it to
-`components/shared/`. If only this route uses it, keep it co-located.
+The rule: if a primitive is used in three or more routes, hoist it to
+`components/shared/`. If only one route uses it, keep it co-located.
 
 ---
 
 ## How data flows end-to-end
 
-Take a single user action and watch it travel:
+Here's a single merchant action travelling through every layer:
 
 > Merchant clicks "Mark paid" on an order card
 
 ```
-1. OrderCard.tsx           onClick={() => onMarkPaid(order.id)}
-2. OrdersClient.tsx         markPaid (from useOrdersState)
-3. useOrdersState.ts        api.markOrderPaid(id)
-4. lib/api.ts               POST /orders/:id/mark-paid (cookie auth)
-5. orders.controller.ts     @Post(':id/mark-paid') → svc.markPaid
-6. orders.service.ts        prisma.order.update(...) + audit event
-7. (response)               OrderSchema-shaped JSON
-8. useOrdersState.ts        setOrders(prev => prev.map(o => merge))
-9. OrderCard.tsx            re-renders with new payment status
-10. Toast                   "Marked as paid."
+1. OrderCard.tsx         onClick={() => onMarkPaid(order.id)}
+2. OrdersClient.tsx       markPaid (from useOrdersState)
+3. useOrdersState.ts      api.markOrderPaid(id)
+4. lib/api.ts             POST /orders/:id/mark-paid (cookie auth)
+5. orders.controller.ts   @Post(':id/mark-paid') → svc.markPaid
+6. orders.service.ts      prisma.order.update(...) + audit event
+7. (response)             OrderSchema-shaped JSON
+8. useOrdersState.ts      setOrders(prev => prev.map(o => merge))
+9. OrderCard.tsx          re-renders with new payment status
+10. Toast                 "Marked as paid."
 ```
 
-The same pattern holds for every mutation. Find the section, follow the
-callback up to the hook, find the API call, jump to the controller, read the
-service. Five files, predictable order, no surprises.
+That's the standard mutation lifecycle. Every mutation in the app follows
+the same path: section → orchestrator → hook → API client → controller →
+service → response → hook updates state → section re-renders.
+
+When you're debugging or building, find any link in that chain and the
+rest is one click away.
 
 ---
 
-## Conventions cheat-sheet
+## Conventions
 
-| Thing                | Convention                                                                                                                         |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| File names           | `kebab-case.ts` for backend, `PascalCase.tsx` for React components, `use-foo.ts` for hooks, `useFoo.ts` if co-located with a route |
-| Component exports    | Named exports (`export function FooBar()`). One component per file unless < 20 LOC.                                                |
-| Folder names         | lowercase, one feature per folder                                                                                                  |
-| State hooks          | `use<Route>State.ts` co-located with the route                                                                                     |
-| API client           | `lib/api.ts` — one method per endpoint, typed against `@jobab/shared`                                                              |
-| Network shapes       | Always `@jobab/shared`. Never duplicate.                                                                                           |
-| Backend body parsing | `Schema.parse(body)` inside the controller. Never trust `@Body() body: unknown` without parsing.                                   |
-| Tests                | Colocated `*.spec.ts` next to the source. Jest.                                                                                    |
-| Maximum file size    | Aim for < 200 LOC, hard ceiling at ~300. Above that, ask "does this file do more than one thing?"                                  |
-| Imports              | Tooling-managed: prettier + lint-staged on commit.                                                                                 |
+| Thing                | Convention                                                                                                                                     |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| File names           | `kebab-case.ts` for backend, `PascalCase.tsx` for React components, `use-foo.ts` for cross-route hooks, `useFoo.ts` if co-located with a route |
+| Component exports    | Named exports (`export function FooBar()`). One component per file unless it's under 20 lines.                                                 |
+| Folder names         | lowercase, one feature per folder                                                                                                              |
+| State hooks          | `use<Route>State.ts` co-located with the route                                                                                                 |
+| API client           | `lib/api.ts` — one method per endpoint, typed against `@jobab/shared`                                                                          |
+| Network shapes       | Always `@jobab/shared`. Never duplicate.                                                                                                       |
+| Backend body parsing | `Schema.parse(body)` inside the controller. Never trust `@Body() body: unknown` without parsing.                                               |
+| Tests                | Colocated `*.spec.ts` next to the source. Jest.                                                                                                |
+| File size            | Aim for under 200 lines, hard ceiling around 300. If a file does more than one thing, split it.                                                |
+| Imports              | Tooling-managed: prettier + lint-staged on every commit.                                                                                       |
 
 ---
 
@@ -393,7 +487,7 @@ service. Five files, predictable order, no surprises.
 
 You've been asked to add a "Discount codes" feature. Here's the playbook.
 
-### 1 · Define the contract in `@jobab/shared`
+### 1. Define the contract in `@jobab/shared`
 
 ```ts
 // packages/shared/src/discount.ts
@@ -414,7 +508,7 @@ export const CreateDiscountBodySchema = z.object({
 
 Re-export from `packages/shared/src/index.ts`.
 
-### 2 · Add a Prisma model + migration
+### 2. Add a Prisma model + migration
 
 ```prisma
 // apps/backend/prisma/schema.prisma
@@ -434,7 +528,7 @@ model Discount {
 pnpm --filter @jobab/backend prisma:migrate
 ```
 
-### 3 · Add a backend feature module
+### 3. Add a backend feature module
 
 ```
 apps/backend/src/discounts/
@@ -445,13 +539,14 @@ apps/backend/src/discounts/
 ```
 
 Register the new shared schemas in `apps/backend/src/swagger/zod-registry.ts`
-so the Swagger UI picks them up. Decorate the controller with `@ApiAuthCookie`,
-`@ApiAuthErrors`, `@ApiZodBody('CreateDiscountBody')`, `@ApiZodOk('Discount')`,
-`@ApiNotFound('Discount')` — see `apps/backend/src/swagger/decorators.ts`.
+so the Swagger UI picks them up. Decorate the controller with the
+`@ApiAuthCookie`, `@ApiAuthErrors`, `@ApiZodBody('CreateDiscountBody')`,
+`@ApiZodOk('Discount')`, `@ApiNotFound('Discount')` decorators — see
+`apps/backend/src/swagger/decorators.ts`.
 
 Register `DiscountsModule` in `apps/backend/src/app.module.ts`.
 
-### 4 · Add the API client method
+### 4. Add the API client method
 
 ```ts
 // apps/web/lib/api.ts
@@ -462,7 +557,7 @@ discounts: {
 }
 ```
 
-### 5 · Add the route
+### 5. Add the route
 
 ```
 apps/web/app/discounts/
@@ -473,61 +568,64 @@ apps/web/app/discounts/
   NewDiscountModal.tsx   section: create form
 ```
 
-### 6 · Wire it into the nav
+### 6. Wire it into the nav
 
 `apps/web/components/layout/NavRail.tsx` gets one more icon. Done.
 
-### 7 · Ship
+### 7. Ship
 
 ```bash
 pnpm typecheck && pnpm lint
 git add -A && git commit -m "feat(discounts): add discount-code management"
 ```
 
-The pre-commit hook runs prettier + eslint. Swagger UI now shows the new tag
-under `/docs`. The README API table updates from Swagger automatically.
+The pre-commit hook runs prettier and eslint. Swagger UI now shows the
+new tag at `/docs`. Both backend and frontend types stay in sync via
+`@jobab/shared`.
+
+That's the whole playbook. Every feature in the repo was built this way.
 
 ---
 
-## What lives where — every directory explained
+## Directory reference
 
 ### Backend
 
-| Path                                                | What                                                                                 |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `apps/backend/src/main.ts`                          | API entry point. Helmet, CORS, Swagger setup, cookie parser.                         |
-| `apps/backend/src/agent/worker.ts`                  | Worker entry point. BullMQ consumer + agent loop.                                    |
-| `apps/backend/src/agent/`                           | The LLM agent — tool calling, providers (Groq), tool definitions in `tools/`.        |
-| `apps/backend/src/auth/`                            | Login, sign-up, sessions, the `@Public` decorator, role guard, invite tokens.        |
-| `apps/backend/src/conversations/`, `tags/`, `notes` | Inbox CRUD + AI handoff.                                                             |
-| `apps/backend/src/orders/`                          | Orders + the `OrderGuardrail` that validates stock + total + duplicates before mint. |
-| `apps/backend/src/catalog/`                         | Products + the `CatalogSyncService` adapter for CSV / Shopify / Woo.                 |
-| `apps/backend/src/webhooks/meta.controller.ts`      | Meta webhook entry with HMAC signature verification.                                 |
-| `apps/backend/src/embeddings/`, `vision/`           | Jina + Groq vision adapters.                                                         |
-| `apps/backend/src/messenger/`                       | Outbound Send-API integration.                                                       |
-| `apps/backend/src/notifications/`                   | WhatsApp / push merchant alerts.                                                     |
-| `apps/backend/src/observability/`                   | Sentry + Langfuse + pino.                                                            |
-| `apps/backend/src/common/`                          | Filters, encryption service, decorators.                                             |
-| `apps/backend/src/config/`                          | The Zod-validated env loader.                                                        |
-| `apps/backend/src/swagger/`                         | Zod→OpenAPI bridge + reusable `@ApiX` decorators.                                    |
-| `apps/backend/prisma/`                              | Schema, migrations, seed.                                                            |
+| Path                                                 | What                                                                                 |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `apps/backend/src/main.ts`                           | API entry point. Helmet, CORS, Swagger setup, cookie parser.                         |
+| `apps/backend/src/agent/worker.ts`                   | Worker entry point. BullMQ consumer + agent loop.                                    |
+| `apps/backend/src/agent/`                            | The LLM agent — tool calling, providers (Groq), tool definitions in `tools/`.        |
+| `apps/backend/src/auth/`                             | Login, sign-up, sessions, the `@Public` decorator, role guard, invite tokens.        |
+| `apps/backend/src/conversations/`, `tags/`, `notes/` | Inbox CRUD + AI handoff.                                                             |
+| `apps/backend/src/orders/`                           | Orders + the `OrderGuardrail` that validates stock + total + duplicates before mint. |
+| `apps/backend/src/catalog/`                          | Products + the `CatalogSyncService` adapter for CSV / Shopify / Woo.                 |
+| `apps/backend/src/webhooks/meta.controller.ts`       | Meta webhook entry with HMAC signature verification.                                 |
+| `apps/backend/src/embeddings/`, `vision/`            | Jina + Groq vision adapters.                                                         |
+| `apps/backend/src/messenger/`                        | Outbound Send-API integration with the 24-hour-window guard.                         |
+| `apps/backend/src/notifications/`                    | WhatsApp / push merchant alerts.                                                     |
+| `apps/backend/src/observability/`                    | Sentry + Langfuse + pino.                                                            |
+| `apps/backend/src/common/`                           | Filters, encryption service, decorators.                                             |
+| `apps/backend/src/config/`                           | The Zod-validated env loader.                                                        |
+| `apps/backend/src/swagger/`                          | Zod→OpenAPI bridge + reusable `@ApiX` decorators.                                    |
+| `apps/backend/prisma/`                               | Schema, migrations, seed.                                                            |
 
 ### Frontend
 
-| Path                                           | What                                                                             |
-| ---------------------------------------------- | -------------------------------------------------------------------------------- |
-| `apps/web/app/<route>/page.tsx`                | Server entry, data fetch.                                                        |
-| `apps/web/app/<route>/<Route>Client.tsx`       | Orchestrator.                                                                    |
-| `apps/web/app/<route>/use<Route>State.ts`      | All state + mutations for this route.                                            |
-| `apps/web/app/<route>/<Section>.tsx`           | Per-section UI.                                                                  |
-| `apps/web/app/layout.tsx`                      | Root layout — fonts, toast provider, connectivity banner.                        |
-| `apps/web/components/inbox/`                   | Shared inbox pieces (RightRail, TagBar, ActivityList…).                          |
-| `apps/web/components/layout/`                  | AppShell, NavRail, AvatarMenu, MobileNav.                                        |
-| `apps/web/components/shared/`                  | Cross-app primitives (Toast, EmptyState, Jamdani, …).                            |
-| `apps/web/lib/api.ts`                          | The typed API client.                                                            |
-| `apps/web/lib/use-poll.ts`, `use-tab-badge.ts` | Generic hooks.                                                                   |
-| `apps/web/lib/types.ts`                        | Re-exports of `@jobab/shared` types.                                             |
-| `apps/web/app/api/backend/[...path]/route.ts`  | The dev proxy that forwards `/api/backend/*` to the NestJS backend with cookies. |
+| Path                                           | What                                                                         |
+| ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| `apps/web/app/<route>/page.tsx`                | Server entry, data fetch.                                                    |
+| `apps/web/app/<route>/<Route>Client.tsx`       | Orchestrator.                                                                |
+| `apps/web/app/<route>/use<Route>State.ts`      | All state + mutations for this route.                                        |
+| `apps/web/app/<route>/<Section>.tsx`           | Per-section UI.                                                              |
+| `apps/web/app/layout.tsx`                      | Root layout — fonts, toast provider, connectivity banner.                    |
+| `apps/web/components/inbox/`                   | Shared inbox pieces (RightRail, TagBar, ActivityList…).                      |
+| `apps/web/components/layout/`                  | AppShell, NavRail, AvatarMenu, MobileNav.                                    |
+| `apps/web/components/shared/`                  | Cross-app primitives (Toast, EmptyState, Jamdani, …).                        |
+| `apps/web/lib/api.ts`                          | The typed API client.                                                        |
+| `apps/web/lib/use-poll.ts`, `use-tab-badge.ts` | Generic hooks.                                                               |
+| `apps/web/lib/types.ts`                        | Re-exports of `@jobab/shared` types.                                         |
+| `apps/web/app/api/backend/[...path]/route.ts`  | The proxy that forwards `/api/backend/*` to the NestJS backend with cookies. |
 
 ### Shared
 
@@ -538,20 +636,24 @@ under `/docs`. The README API table updates from Swagger automatically.
 
 ---
 
-## TL;DR for the next person reading this
+## When in doubt
 
-1. **`@jobab/shared` is the contract.** Add fields there; both apps follow.
-2. **Backend = feature modules** with `controller / service / module` (+ spec).
+1. **`@jobab/shared` is the contract.** Add a field there and TypeScript
+   will tell you where else to update.
+2. **Backend = feature modules** with `controller / service / module`
+   (and a spec when there's logic).
 3. **Frontend route = `page → Client → useState → sections`.** Keep the
    orchestrator thin, push state into the hook, make sections stateless.
-4. **Aim for < 200 LOC per file.** If a file does more than one thing, split it.
-5. **Swagger is the API source of truth.** Decorators on controllers; rich
-   docs live in code, not in scattered Markdown.
+4. **Aim for under 200 lines per file.** Above that, ask "does this file
+   do more than one thing?"
+5. **Swagger is the API source of truth.** Decorators on controllers; the
+   live spec at `/docs` is always current.
 6. **Tests live next to the code.** `*.spec.ts` colocated.
-7. **When in doubt, copy a sibling.** `app/orders/` and `app/onboarding/` are
-   the cleanest examples of the frontend pattern.
+7. **When you don't know where something should go, copy a sibling.**
+   `app/orders/` and `app/onboarding/` are the cleanest examples of the
+   frontend pattern. `agent/` and `conversations/` are the cleanest
+   examples of the backend pattern.
 
-If something in the repo violates this doc, it's a bug — either the code or
-the doc needs to change. The repo is the source of truth; this is a map to it.
-
-Happy hacking.
+If something in the repo doesn't match this doc, one of them is wrong.
+Both are checked into the same repo, so pick the one that makes the
+overall system clearer and fix the other.
