@@ -179,6 +179,7 @@ export default defineConfig({
           { text: 'Investor FAQ', link: '/business/4-investor-faq' },
           { text: 'Demo script', link: '/business/5-demo-script' },
           { text: 'Data room checklist', link: '/business/6-data-room' },
+          { text: 'Downloads (PPTX / XLSX / PDF)', link: '/business/dist/' },
         ],
       },
       {
