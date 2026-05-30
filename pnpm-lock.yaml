@@ -17,6 +17,9 @@ importers:
       '@commitlint/config-conventional':
         specifier: ^19.5.0
         version: 19.8.1
+      eslint:
+        specifier: ^8.57.1
+        version: 8.57.1
       lint-staged:
         specifier: ^15.2.10
         version: 15.5.2
