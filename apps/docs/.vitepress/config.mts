@@ -119,6 +119,7 @@ export default defineConfig({
         items: [
           { text: 'Local setup', link: '/build/1-setup' },
           { text: 'API guide', link: '/build/2-api-guide' },
+          { text: 'Tech stack', link: '/build/3-tech-stack' },
           {
             text: 'Architecture decisions',
             collapsed: true,

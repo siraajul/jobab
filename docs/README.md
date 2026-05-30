@@ -32,7 +32,7 @@ features:
       src: /icons/build.svg
       alt: ''
     title: Build
-    details: Get the project running on your machine in 15 minutes. Read the API guide. Map the codebase.
+    details: Get the project running on your machine in 15 minutes. Read the API guide. Understand every library on the stack.
     link: /build/1-setup
     linkText: Local setup
 
@@ -74,7 +74,7 @@ features:
 If you're not sure where to begin:
 
 - **"What is this project?"** → [What is Jobab?](./start-here/1-what-is-jobab.md) → [How it works](./start-here/2-how-it-works.md)
-- **"I'm a developer, get me set up"** → [Local setup](./build/1-setup.md) → [API guide](./build/2-api-guide.md)
+- **"I'm a developer, get me set up"** → [Local setup](./build/1-setup.md) → [API guide](./build/2-api-guide.md) → [Tech stack](./build/3-tech-stack.md)
 - **"I want to connect a real Facebook Page"** → [Meta's rules first](./start-here/3-meta-rules-simple.md) → [Step-by-step setup](./ship/2-meta-setup.md)
 - **"Where's the project at right now?"** → [Status](./status.md)
 
