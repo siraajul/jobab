@@ -175,6 +175,10 @@ export default defineConfig({
         items: [
           { text: 'Pitch deck', link: '/business/1-pitch-deck' },
           { text: 'Financial model', link: '/business/2-financial-model' },
+          { text: 'One-pager', link: '/business/3-one-pager' },
+          { text: 'Investor FAQ', link: '/business/4-investor-faq' },
+          { text: 'Demo script', link: '/business/5-demo-script' },
+          { text: 'Data room checklist', link: '/business/6-data-room' },
         ],
       },
       {
