@@ -101,92 +101,87 @@ export default defineConfig({
       { text: 'GitHub', link: 'https://github.com/siraajul/jobab' },
     ],
 
-    sidebar: {
-      '/start-here/': [
-        {
-          text: 'Start here',
-          items: [
-            { text: 'What is Jobab?', link: '/start-here/1-what-is-jobab' },
-            { text: 'How it works', link: '/start-here/2-how-it-works' },
-            {
-              text: "Meta's rules, in plain English",
-              link: '/start-here/3-meta-rules-simple',
-            },
-          ],
-        },
-      ],
-
-      '/build/': [
-        {
-          text: 'Build',
-          items: [
-            { text: 'Local setup', link: '/build/1-setup' },
-            { text: 'API guide', link: '/build/2-api-guide' },
-          ],
-        },
-        {
-          text: 'Architecture decisions',
-          collapsed: true,
-          items: [
-            {
-              text: '0001 — pnpm monorepo',
-              link: '/build/decisions/0001-monorepo-pnpm',
-            },
-            {
-              text: '0002 — LLM provider interface',
-              link: '/build/decisions/0002-llm-provider-interface',
-            },
-            { text: '0003 — order guardrail', link: '/build/decisions/0003-order-guardrail' },
-            {
-              text: '0004 — RBAC / comments / mobile',
-              link: '/build/decisions/0004-phase2-rbac-comments-mobile',
-            },
-          ],
-        },
-      ],
-
-      '/ship/': [
-        {
-          text: 'Ship',
-          items: [
-            { text: 'Channel plan', link: '/ship/1-channel-plan' },
-            { text: 'Meta setup, step by step', link: '/ship/2-meta-setup' },
-          ],
-        },
-        {
-          text: 'App Review submission',
-          collapsed: true,
-          items: [
-            { text: 'Overview', link: '/ship/app-review/' },
-            { text: 'Use-case copy', link: '/ship/app-review/use-case' },
-            { text: 'Screencast script', link: '/ship/app-review/screencast-script' },
-            { text: 'Test credentials', link: '/ship/app-review/test-credentials' },
-          ],
-        },
-        {
-          text: 'Pilot launch',
-          collapsed: true,
-          items: [
-            { text: 'Overview', link: '/ship/pilot/' },
-            { text: 'Pilot plan', link: '/ship/pilot/pilot-plan' },
-            { text: 'Outreach', link: '/ship/pilot/pilot-outreach' },
-            { text: 'Interview script', link: '/ship/pilot/interview-script' },
-            { text: 'Merchant consent', link: '/ship/pilot/merchant-consent' },
-            { text: 'Weekly check-in', link: '/ship/pilot/weekly-checkin' },
-          ],
-        },
-      ],
-
-      '/legal/': [
-        {
-          text: 'Legal',
-          items: [
-            { text: 'Privacy policy', link: '/legal/privacy-policy' },
-            { text: 'Data deletion', link: '/legal/data-deletion' },
-          ],
-        },
-      ],
-    },
+    // One unified sidebar shown on every page. Each section is collapsible
+    // so you can jump from any page to any other without going back home.
+    sidebar: [
+      {
+        text: 'Start here',
+        collapsed: false,
+        items: [
+          { text: 'What is Jobab?', link: '/start-here/1-what-is-jobab' },
+          { text: 'How it works', link: '/start-here/2-how-it-works' },
+          { text: "Meta's rules, in plain English", link: '/start-here/3-meta-rules-simple' },
+        ],
+      },
+      {
+        text: 'Build',
+        collapsed: false,
+        items: [
+          { text: 'Local setup', link: '/build/1-setup' },
+          { text: 'API guide', link: '/build/2-api-guide' },
+          {
+            text: 'Architecture decisions',
+            collapsed: true,
+            items: [
+              { text: 'Overview', link: '/build/decisions/' },
+              { text: '0001 — pnpm monorepo', link: '/build/decisions/0001-monorepo-pnpm' },
+              {
+                text: '0002 — LLM provider interface',
+                link: '/build/decisions/0002-llm-provider-interface',
+              },
+              { text: '0003 — order guardrail', link: '/build/decisions/0003-order-guardrail' },
+              {
+                text: '0004 — RBAC / comments / mobile',
+                link: '/build/decisions/0004-phase2-rbac-comments-mobile',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        text: 'Ship',
+        collapsed: false,
+        items: [
+          { text: 'Channel plan', link: '/ship/1-channel-plan' },
+          { text: 'Meta setup, step by step', link: '/ship/2-meta-setup' },
+          {
+            text: 'App Review submission',
+            collapsed: true,
+            items: [
+              { text: 'Overview', link: '/ship/app-review/' },
+              { text: 'Use-case copy', link: '/ship/app-review/use-case' },
+              { text: 'Screencast script', link: '/ship/app-review/screencast-script' },
+              { text: 'Test credentials', link: '/ship/app-review/test-credentials' },
+            ],
+          },
+          {
+            text: 'Pilot launch',
+            collapsed: true,
+            items: [
+              { text: 'Overview', link: '/ship/pilot/' },
+              { text: 'Pilot plan', link: '/ship/pilot/pilot-plan' },
+              { text: 'Outreach', link: '/ship/pilot/pilot-outreach' },
+              { text: 'Interview script', link: '/ship/pilot/interview-script' },
+              { text: 'Merchant consent', link: '/ship/pilot/merchant-consent' },
+              { text: 'Weekly check-in', link: '/ship/pilot/weekly-checkin' },
+            ],
+          },
+        ],
+      },
+      {
+        text: 'Legal',
+        collapsed: true,
+        items: [
+          { text: 'Privacy policy', link: '/legal/privacy-policy' },
+          { text: 'Data deletion', link: '/legal/data-deletion' },
+        ],
+      },
+      {
+        text: 'Project',
+        collapsed: true,
+        items: [{ text: 'Status', link: '/status' }],
+      },
+    ],
 
     socialLinks: [{ icon: 'github', link: 'https://github.com/siraajul/jobab' }],
 
