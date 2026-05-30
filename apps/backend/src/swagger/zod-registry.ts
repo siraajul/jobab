@@ -27,6 +27,7 @@ import {
   ConversationListItemSchema,
   ConversationDetailSchema,
   ConversationActivityItemSchema,
+  MessagingWindowStatusSchema,
   SendReplyBodySchema,
   TagSchema,
   CreateTagBodySchema,
@@ -109,6 +110,11 @@ reg(
   'ConversationActivityItem',
   ConversationActivityItemSchema,
   'One entry in the AI activity feed (tool call, tokens, latency, cost).',
+);
+reg(
+  'MessagingWindowStatus',
+  MessagingWindowStatusSchema,
+  "Whether the merchant can free-form reply right now under Meta's 24-hour customer-service window.",
 );
 reg('SendReplyBody', SendReplyBodySchema, 'Plain-text reply sent by the merchant.');
 reg('Tag', TagSchema, 'Colour-coded label (e.g. "Priority", "Top client") used to triage chats.');

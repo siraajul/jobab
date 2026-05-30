@@ -6,6 +6,7 @@ import { CurrentUser, OrgId, type AuthenticatedContext } from '../auth/auth.guar
 import {
   ApiAuthCookie,
   ApiAuthErrors,
+  ApiBadRequest,
   ApiNotFound,
   ApiZodBody,
   ApiZodOk,
@@ -123,16 +124,36 @@ export class ConversationsController {
     return this.svc.handBack(orgId, id);
   }
 
+  @Get(':id/messaging-window')
+  @ApiOperation({
+    summary: 'Is the 24-hour customer-service window still open?',
+    description:
+      "Meta only permits free-form replies within 24 hours of the customer's last inbound " +
+      'message (per Messenger, Instagram, and WhatsApp policy). Use this endpoint to grey out ' +
+      'the composer in the inbox when `canSend=false`, and to show the merchant **when** the ' +
+      'window closes. Outside the window, notifications must be sent via approved WhatsApp ' +
+      'templates instead (Messenger message tags were deprecated globally on Feb 9, 2026).',
+  })
+  @ApiParam({ name: 'id', description: 'Conversation ID.' })
+  @ApiZodOk('MessagingWindowStatus', 'Window snapshot — whether merchant can free-form reply now.')
+  @ApiNotFound('Conversation')
+  messagingWindow(@OrgId() orgId: string, @Param('id') id: string) {
+    return this.svc.messagingWindow(orgId, id);
+  }
+
   @Post(':id/reply')
   @ApiOperation({
     summary: 'Send a merchant reply',
     description:
       "Send a plain-text message as the merchant. The message is delivered via the customer's " +
-      'channel (Facebook / Instagram / WhatsApp) and appended to the thread with `sender = "human"`.',
+      'channel (Facebook / Instagram / WhatsApp) and appended to the thread with `sender = "human"`. ' +
+      'Returns **400 OUT_OF_MESSAGING_WINDOW** if the 24-hour customer-service window has closed — ' +
+      'check `GET :id/messaging-window` first to avoid surprising the merchant.',
   })
   @ApiParam({ name: 'id', description: 'Conversation ID.' })
   @ApiZodBody('SendReplyBody', 'The text to send. Max 4 000 chars.')
   @ApiZodOk('Conversation', 'Conversation with the new message appended.')
+  @ApiBadRequest('Cannot send: outside the 24-hour customer-service window.')
   @ApiNotFound('Conversation')
   reply(@OrgId() orgId: string, @Param('id') id: string, @Body() body: unknown) {
     const { text } = SendReplyBodySchema.parse(body);

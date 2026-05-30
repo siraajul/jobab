@@ -55,7 +55,9 @@ export class CommentsService {
 
     const classified = await this.classifier.classify(comment.text);
     const rule = await this.prisma.commentRule.findUnique({
-      where: { organizationId_intent: { organizationId: page.organizationId, intent: classified.intent } },
+      where: {
+        organizationId_intent: { organizationId: page.organizationId, intent: classified.intent },
+      },
     });
 
     const persisted = await this.prisma.comment.create({
@@ -110,11 +112,7 @@ export class CommentsService {
    * Public reply via Graph: POST /{COMMENT_ID}/comments. Falls back to a log
    * line when MESSENGER_DRY_RUN is on or the page has no real token (dev).
    */
-  private async postPublicReply(
-    pageId: string,
-    commentId: string,
-    text: string,
-  ): Promise<boolean> {
+  private async postPublicReply(pageId: string, commentId: string, text: string): Promise<boolean> {
     if (this.env.get('MESSENGER_DRY_RUN')) {
       this.log.log(`[dry-run] public reply to ${commentId}: "${text}"`);
       return true;
@@ -152,10 +150,16 @@ export class CommentsService {
 
   /**
    * Open a private DM with the commenter and link it back to the comment.
-   * Meta supports `recipient: { comment_id }` with `messaging_type=MESSAGE_TAG`
-   * + `tag=POST_PURCHASE_UPDATE`/`HUMAN_AGENT`; we use a generic message and
-   * let the agent loop take over once the customer replies. In dry-run mode
-   * we just provision the conversation row.
+   * Public-comment → private-reply is allowed within ~7 days of the comment
+   * via `recipient: { comment_id }` on the Send API; once the customer
+   * responds the standard 24-hour customer-service window kicks in and the
+   * agent loop takes over. In dry-run mode we just provision the conversation
+   * row so the dashboard has something to render.
+   *
+   * We deliberately do NOT use the deprecated MESSAGE_TAG path
+   * (`POST_PURCHASE_UPDATE` / `CONFIRMED_EVENT_UPDATE` / `ACCOUNT_UPDATE`) —
+   * Meta is sunsetting those tags globally on Feb 9, 2026, and their
+   * Utility-Messages replacement isn't available in Bangladesh yet.
    */
   private async openDmBridge(
     commentRowId: string,

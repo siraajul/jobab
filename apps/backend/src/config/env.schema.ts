@@ -22,7 +22,9 @@ export const EnvSchema = z
     META_APP_ID: z.string().min(1).optional(),
     META_APP_SECRET: z.string().min(1),
     META_VERIFY_TOKEN: z.string().min(1),
-    META_GRAPH_VERSION: z.string().default('v20.0'),
+    // v20 is supported until Sept 24, 2026; v22 gives runway while staying
+    // a stable, widely-deployed version. Override in env for upstream bumps.
+    META_GRAPH_VERSION: z.string().default('v22.0'),
     MESSENGER_DRY_RUN: z.coerce.boolean().default(true),
 
     // LLM (chat/tool-calling). `stub` is the in-memory deterministic provider

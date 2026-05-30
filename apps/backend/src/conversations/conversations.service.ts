@@ -103,12 +103,7 @@ export class ConversationsService {
 
   /** Older messages, paginated by createdAt cursor. Used by mobile thread
    *  pull-up-to-load-older. */
-  async olderMessages(
-    organizationId: string,
-    id: string,
-    beforeIso: string,
-    limit = 50,
-  ) {
+  async olderMessages(organizationId: string, id: string, beforeIso: string, limit = 50) {
     await this.requireOwn(organizationId, id);
     return this.prisma.message.findMany({
       where: { conversationId: id, createdAt: { lt: new Date(beforeIso) } },
@@ -182,8 +177,21 @@ export class ConversationsService {
     return { ok: true, productTitle: product.title };
   }
 
+  async messagingWindow(organizationId: string, id: string) {
+    await this.requireOwn(organizationId, id);
+    return this.messenger.getMessagingWindow(id);
+  }
+
   async sendMerchantReply(organizationId: string, id: string, text: string) {
     await this.requireOwn(organizationId, id);
+    // Check the 24-hour customer-service window BEFORE persisting — out-of-window
+    // sends throw OutOfMessagingWindowError, which the controller surfaces as a 400.
+    // Otherwise we'd leave a ghost merchant-message that never reached the customer.
+    const window = await this.messenger.getMessagingWindow(id);
+    if (!window.canSend) {
+      // Let the messenger throw so the error class + payload stay in one place.
+      await this.messenger.sendText(id, text);
+    }
     // Persist the merchant message …
     const msg = await this.prisma.message.create({
       data: {
@@ -193,7 +201,10 @@ export class ConversationsService {
         content: text,
       },
     });
-    // … and hand off to the Send API (currently a stub).
+    // … and hand off to the Send API. Note: MessengerService.sendText ALSO
+    // persists an outgoing message (with sender='agent'). The merchant-vs-agent
+    // sender distinction means both rows survive — by design, so the inbox
+    // can show the human-typed message separately from the AI auto-acks.
     await this.messenger.sendText(id, text);
     return msg;
   }

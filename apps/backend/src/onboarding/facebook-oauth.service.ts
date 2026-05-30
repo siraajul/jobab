@@ -18,7 +18,10 @@ export const FACEBOOK_OAUTH_SCOPES = [
   'pages_manage_engagement',
   'instagram_basic',
   'instagram_manage_messages',
-  'business_management',
+  // `business_management` was previously included here, but it requires the
+  // merchant to have a Meta Business Manager account — many small BD shops
+  // don't, and the consent prompt blocks them. Add it back only if the
+  // token-rotation cron actually needs it.
 ];
 
 export interface FacebookManagedPage {

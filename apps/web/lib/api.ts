@@ -156,6 +156,15 @@ export const api = {
     }),
   conversationActivity: (id: string, limit = 50) =>
     fetcher<ConversationActivityItem[]>(`/conversations/${id}/activity?limit=${limit}`),
+  messagingWindow: (id: string) =>
+    fetcher<{
+      canSend: boolean;
+      platform: 'facebook' | 'instagram' | 'whatsapp';
+      windowMs: number;
+      lastInboundAt: string | null;
+      windowClosesAt: string | null;
+      reason: string | null;
+    }>(`/conversations/${id}/messaging-window`),
   addConversationTag: (id: string, tagId: string) =>
     fetcher<{ ok: boolean }>(`/conversations/${id}/tags`, {
       method: 'POST',

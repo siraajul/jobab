@@ -10,6 +10,25 @@ of each channel, see [`integrations.md`](./integrations.md).
 > developer account. Boxes marked **[per-merchant]** repeat for each new
 > merchant you onboard.
 
+> ### ⚠️ Platform realities you must know before setting up channels
+>
+> - **Inside the 24-hour customer-service window** (after the customer's last
+>   message): AI free-form replies — fully allowed, no cost, no review needed.
+>   This is the core product.
+> - **Outside 24h on Messenger** in Bangladesh: **blocked**. Meta deprecated
+>   `POST_PURCHASE_UPDATE` / `CONFIRMED_EVENT_UPDATE` / `ACCOUNT_UPDATE` tags
+>   globally on Feb 9, 2026. The replacement (Utility Messages) is in open
+>   beta in only US/VN/TH/PH — not Bangladesh.
+> - **Outside 24h on WhatsApp**: allowed via pre-approved templates only,
+>   billed per message. Service messages inside 24h stay free.
+> - **HUMAN_AGENT tag**: do not use for AI replies. Meta detects misuse and
+>   revokes API access — it's intended for real human agents only.
+> - **Instagram rate limit**: 200 DMs/hour per merchant account (cut from
+>   5,000 in late 2024). Plus a 1-DM-per-user-per-24h cap on comment/story
+>   triggers as of 2026.
+> - **WhatsApp pricing**: moved from per-conversation to per-message billing
+>   on July 1, 2025. Old per-conversation math is obsolete.
+
 ---
 
 ## Table of contents
@@ -70,7 +89,7 @@ Add to `apps/backend/.env`:
 META_APP_ID=<from Meta dashboard>
 META_APP_SECRET=<from Meta dashboard>
 META_VERIFY_TOKEN=<any random string you invent, used in webhook handshake>
-META_GRAPH_VERSION=v20.0
+META_GRAPH_VERSION=v22.0
 
 # WhatsApp Cloud API
 WA_PROVIDER=cloud                       # 'cloud' = Meta Cloud API. 'twilio'/'gupshup' = old notification path
@@ -208,7 +227,7 @@ fallback (1.2-bis).
 ```bash
 # 1. Subscribe page to webhook fields
 curl -X POST \
-  "https://graph.facebook.com/v20.0/<PAGE_ID>/subscribed_apps" \
+  "https://graph.facebook.com/v22.0/<PAGE_ID>/subscribed_apps" \
   -d "subscribed_fields=messages,messaging_postbacks,message_reads" \
   -d "access_token=<PAGE_ACCESS_TOKEN>"
 
@@ -406,7 +425,7 @@ payload arrives at the same `/webhooks/meta` URL with `object: "instagram"`.
 # Send a free-form message from the API (only works within 24h window;
 # for first test, message your own phone, then your phone replies, then send this)
 curl -X POST \
-  "https://graph.facebook.com/v20.0/${WA_PHONE_NUMBER_ID}/messages" \
+  "https://graph.facebook.com/v22.0/${WA_PHONE_NUMBER_ID}/messages" \
   -H "Authorization: Bearer ${WA_ACCESS_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{

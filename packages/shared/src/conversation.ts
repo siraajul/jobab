@@ -1,7 +1,22 @@
 import { z } from 'zod';
-import { ConversationStatusSchema, HandoffCategorySchema } from './enums';
+import { ConversationStatusSchema, HandoffCategorySchema, PlatformSchema } from './enums';
 import { MessageSchema } from './message';
 import { OrderSchema } from './order';
+
+/**
+ * Snapshot of whether the merchant/agent can free-form-reply right now under
+ * Meta's 24-hour customer-service window. The inbox renders the composer
+ * disabled when `canSend=false` and shows `reason` as a tooltip.
+ */
+export const MessagingWindowStatusSchema = z.object({
+  canSend: z.boolean(),
+  platform: PlatformSchema,
+  windowMs: z.number().int().positive(),
+  lastInboundAt: z.string().nullable(),
+  windowClosesAt: z.string().nullable(),
+  reason: z.string().nullable(),
+});
+export type MessagingWindowStatus = z.infer<typeof MessagingWindowStatusSchema>;
 
 export const ConversationSchema = z.object({
   id: z.string(),
@@ -78,9 +93,7 @@ export type CreateNoteBody = z.infer<typeof CreateNoteBodySchema>;
 export const ConversationListItemSchema = ConversationSchema.extend({
   page: ConversationPageSchema,
   tags: z.array(ConversationTagSchema).optional(),
-  messages: z.array(
-    MessageSchema.pick({ id: true, content: true, sender: true, createdAt: true }),
-  ),
+  messages: z.array(MessageSchema.pick({ id: true, content: true, sender: true, createdAt: true })),
 });
 export type ConversationListItem = z.infer<typeof ConversationListItemSchema>;
 

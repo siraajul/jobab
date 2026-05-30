@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Platform, Prisma } from '@prisma/client';
 import { EnvService } from '../config/env.service';
 import { EncryptionService } from '../common/encryption/encryption.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -9,8 +9,12 @@ import { PrismaService } from '../prisma/prisma.service';
  *   https://graph.facebook.com/{VERSION}/me/messages
  * using the page access token stored on `pages.access_token` (AES-GCM at rest).
  *
- * The 24-hour standard messaging window is enforced here — outside it, we
- * refuse to send unless an approved message tag is configured (Phase 2).
+ * The **24-hour standard messaging window** is enforced here — outside it,
+ * sends throw `OutOfMessagingWindowError`. Meta deprecated the
+ * `POST_PURCHASE_UPDATE` / `CONFIRMED_EVENT_UPDATE` / `ACCOUNT_UPDATE` tags
+ * (Feb 9, 2026 globally), and the Utility-Messages replacement isn't
+ * available in Bangladesh — so there is no in-app fallback. Out-of-window
+ * notifications must go via the WhatsApp Cloud API + approved templates.
  *
  * Set MESSENGER_DRY_RUN=true to skip the Graph call (for local testing with
  * fake PSIDs). The outgoing message is still persisted so the inbox UI shows
@@ -18,16 +22,93 @@ import { PrismaService } from '../prisma/prisma.service';
  */
 const DEV_TOKEN_SENTINEL = 'dev-token-not-used-in-fake-mode';
 
+/** Per-platform "customer-service window" length. */
+const WINDOW_MS_BY_PLATFORM: Record<Platform, number> = {
+  facebook: 24 * 60 * 60 * 1000,
+  instagram: 24 * 60 * 60 * 1000,
+  // WhatsApp's free-form window is also 24h customer-initiated; outside it,
+  // only pre-approved templates are billable-sendable.
+  whatsapp: 24 * 60 * 60 * 1000,
+};
+
+export interface MessagingWindowStatus {
+  /** True when the merchant/agent can send free-form text right now. */
+  canSend: boolean;
+  /** Platform of the page hosting this conversation. */
+  platform: Platform;
+  /** Window length in milliseconds (informational). */
+  windowMs: number;
+  /** When the customer last sent us a message, or null if they never did. */
+  lastInboundAt: string | null;
+  /** When the window closes (or already closed). */
+  windowClosesAt: string | null;
+  /** Human-readable reason when canSend=false. */
+  reason: string | null;
+}
+
+/** Thrown by sendText when the 24-hour customer-service window is closed. */
+export class OutOfMessagingWindowError extends BadRequestException {
+  constructor(public readonly windowStatus: MessagingWindowStatus) {
+    super({
+      error: 'OUT_OF_MESSAGING_WINDOW',
+      message: windowStatus.reason ?? 'Cannot send: outside the 24-hour customer-service window.',
+      windowClosesAt: windowStatus.windowClosesAt,
+      platform: windowStatus.platform,
+    });
+  }
+}
+
 @Injectable()
 export class MessengerService {
   private readonly log = new Logger(MessengerService.name);
-  private static readonly WINDOW_MS = 24 * 60 * 60 * 1000;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly env: EnvService,
     private readonly encryption: EncryptionService,
   ) {}
+
+  /**
+   * Computes the messaging-window state for a conversation. Pure (no Graph
+   * call), safe to expose to the dashboard so it can grey the composer out.
+   */
+  async getMessagingWindow(conversationId: string): Promise<MessagingWindowStatus> {
+    const conv = await this.prisma.conversation.findUniqueOrThrow({
+      where: { id: conversationId },
+      include: { page: true },
+    });
+    const platform = conv.page.platform;
+    const windowMs = WINDOW_MS_BY_PLATFORM[platform];
+    const lastIn = conv.lastCustomerMessageAt?.getTime() ?? null;
+
+    if (lastIn === null) {
+      return {
+        canSend: false,
+        platform,
+        windowMs,
+        lastInboundAt: null,
+        windowClosesAt: null,
+        reason:
+          'Customer has not messaged this page yet — Meta forbids businesses initiating new threads.',
+      };
+    }
+
+    const closesAt = lastIn + windowMs;
+    const canSend = Date.now() < closesAt;
+    return {
+      canSend,
+      platform,
+      windowMs,
+      lastInboundAt: new Date(lastIn).toISOString(),
+      windowClosesAt: new Date(closesAt).toISOString(),
+      reason: canSend
+        ? null
+        : `Outside the ${windowMs / 3_600_000}h customer-service window. ` +
+          (platform === 'whatsapp'
+            ? 'Send a pre-approved WhatsApp template instead.'
+            : 'The customer must message you first to reopen the window.'),
+    };
+  }
 
   async sendText(
     conversationId: string,
@@ -39,14 +120,12 @@ export class MessengerService {
       include: { page: true },
     });
 
-    const lastIn = conv.lastCustomerMessageAt?.getTime() ?? 0;
-    const withinWindow = Date.now() - lastIn < MessengerService.WINDOW_MS;
-    if (!withinWindow) {
+    const window = await this.getMessagingWindow(conversationId);
+    if (!window.canSend) {
       this.log.warn(
-        `refusing send: outside 24h window (conv=${conversationId}). ` +
-          `Configure a message tag in MessengerService to override.`,
+        `refusing send: ${window.reason} (conv=${conversationId}, platform=${window.platform})`,
       );
-      return;
+      throw new OutOfMessagingWindowError(window);
     }
 
     // Persist first so the inbox shows it even if Graph rejects the call.

@@ -18,19 +18,23 @@ do. A single shop typically gets DMs across:
 - **Instagram Direct** — younger / urban customers, growing fast
 - **WhatsApp** — repeat customers, order updates, payment confirmations
 
-We ship in the order **Messenger → Instagram → WhatsApp**. Messenger is the
-biggest volume and the cheapest to operate (no per-message cost). Instagram
-shares Meta's plumbing so it's mostly a permissions add-on. WhatsApp is last
-because it's paid per conversation and needs separate templates, but it's the
-channel that turns a one-time buyer into a repeat one.
+We ship in the order **Messenger + Instagram → WhatsApp**. Messenger is the
+biggest acquisition channel and Instagram piggybacks on the same OAuth flow,
+so they ship as one Phase 1. **WhatsApp is now Phase 2** (was Phase 3) because
+Meta deprecated Messenger's out-of-window message tags on Feb 9, 2026 — so
+order-update notifications for Bangladeshi merchants ("shipped", "delivered",
+"payment received") can no longer be sent through Messenger. WhatsApp
+templates are the only allowed path. That promotes WhatsApp from "nice to
+have" to "required for any merchant who ships physical goods."
 
 ```
-Phase 1 (now)         Phase 2 (week 4–6)        Phase 3 (week 8–12)
-Messenger             Instagram Direct          WhatsApp Cloud API
-   │                       │                          │
-   └──── same webhook ─────┘                          │
-                                                      │
-                                              separate webhook + templates
+Phase 1 (now)                       Phase 2 (week 6-12)
+Messenger + Instagram               WhatsApp Cloud API
+   │                                    │
+   └──── one OAuth, one webhook ────┘    │
+                                         │
+                                separate webhook + templates
+                                + per-message billing
 ```
 
 ---
@@ -107,7 +111,7 @@ feedback. Pilot plan: [`docs/pilot/`](./pilot/).
 
 ---
 
-## Phase 2 — Instagram Direct
+## Phase 1b — Instagram Direct (bundled with Messenger)
 
 ### Why it's mostly free
 
@@ -134,7 +138,7 @@ different webhook subscription.
 | Add IG permissions to existing App Review submission                             | bundled with Phase 1 if we plan ahead, otherwise +2 weeks |
 | Pilot merchant connects IG Business Account to their FB Page (most already have) | minutes per merchant                                      |
 
-### Phase 2 exit criteria
+### Phase 1b exit criteria
 
 - [ ] IG permissions approved
 - [ ] At least one pilot merchant receiving IG DMs through Jobab
@@ -143,33 +147,48 @@ different webhook subscription.
 
 ---
 
-## Phase 3 — WhatsApp Cloud API
+## Phase 2 — WhatsApp Cloud API
 
 WhatsApp is its own product with separate billing, separate review, separate
 webhooks, and separate UX.
 
 ### What's different about WhatsApp
 
-| Dimension                   | Messenger / IG           | WhatsApp                                 |
-| --------------------------- | ------------------------ | ---------------------------------------- |
-| API surface                 | Graph API, `me/messages` | Cloud API, `phone_number_id/messages`    |
-| Per-message cost            | free                     | **paid per conversation** (24h session)  |
-| Outbound outside 24h window | use message tag          | **must be a pre-approved template**      |
-| Template approval           | not required             | **required**, ~24h per template          |
-| Merchant onboarding         | OAuth, instant           | Embedded Signup, +5 minutes              |
-| Phone number                | none                     | **dedicated number**, not in personal WA |
+| Dimension                   | Messenger / IG                              | WhatsApp                                 |
+| --------------------------- | ------------------------------------------- | ---------------------------------------- |
+| API surface                 | Graph API, `me/messages`                    | Cloud API, `phone_number_id/messages`    |
+| Per-message cost            | free                                        | **paid per template message**            |
+| Outbound outside 24h window | ❌ blocked for Bangladesh (see "Why" below) | **pre-approved template**                |
+| Template approval           | not required (inside window)                | **required**, ~24h per template          |
+| Merchant onboarding         | OAuth, instant                              | Embedded Signup, +5 minutes              |
+| Phone number                | none                                        | **dedicated number**, not in personal WA |
 
-### Pricing reality (Bangladesh, approximate)
+**Why Messenger is blocked outside 24h for BD:** Meta deprecated the
+`POST_PURCHASE_UPDATE`, `CONFIRMED_EVENT_UPDATE`, and `ACCOUNT_UPDATE` message
+tags **globally on Feb 9, 2026** (some sources cite April 27, 2026 as the API
+enforcement date). The replacement — Messenger **Utility Messages** templates
+— is only in open beta in the US, Vietnam, Thailand, and the Philippines as
+of Jobab's writing. **Bangladesh is not on the list.** Until that changes,
+order-update notifications (shipped, delivered, payment received) for BD
+merchants must go through WhatsApp.
 
-- **Service** conversations (customer-initiated, within 24h) — free up to 1,000/month, then per-conv
-- **Utility** (order update) — ~$0.014 per conversation
-- **Marketing** — ~$0.04 per conversation
-- **Authentication** (OTP) — ~$0.015 per conversation
+### Pricing reality (Bangladesh, "Rest of Asia Pacific" tier)
 
-A "conversation" = a 24-hour session. 20 AI replies inside one session = 1
-conversation = 1 charge. **Pricing implication for Jobab:** our merchant
-pricing must absorb this. We pass through cost + margin per conversation, or
-we bundle into tiered plans.
+**Since July 1, 2025 Meta moved WhatsApp from per-conversation to per-message
+billing.** Old "$0.04 per conversation" math is obsolete.
+
+- **Service** messages (inside the 24h customer-service window, customer-initiated) — **free, unlimited**
+- **Utility** templates (order updates, payment confirmations) — paid per delivered template message
+- **Marketing** templates (back-in-stock, new collection) — paid per delivered template message, higher rate
+- **Authentication** templates (OTP) — paid per delivered template message
+
+Bangladesh sits in Meta's "Rest of Asia Pacific" pricing tier. **Exact USD
+rates change quarterly** — check the [official pricing page](https://whatsappbusiness.com/products/platform-pricing/)
+with Bangladesh selected from the dropdown before pricing your tiers.
+
+A 20-message AI conversation that stays inside the 24h window = **$0**. A
+later "your order shipped" template sent the next day = **1 paid Utility
+message**. This is the unit economics to model: free chat, paid notifications.
 
 ### What we build (engineering)
 
@@ -211,7 +230,7 @@ approve and we want them ready when merchants go live.
 | Submit templates for review                                     | 1 day each, parallel |
 | Per-merchant Embedded Signup walks them through their own WABA  | 5 min per merchant   |
 
-### Phase 3 exit criteria
+### Phase 2 exit criteria
 
 - [ ] At least 3 pilot merchants live on WhatsApp through Jobab
 - [ ] All 7 launch templates approved
@@ -227,7 +246,7 @@ approve and we want them ready when merchants go live.
 
 Today every conversation carries its own customer data. As soon as a merchant
 has the same person DM-ing them on Messenger _and_ WhatsApp, we need a real
-`Contact` entity. This is the #1 open gap and gates the value of Phase 3 — see
+`Contact` entity. This is the #1 open gap and gates the value of Phase 2 — see
 the [Lazychat gap roadmap](../docs/MISSING.md).
 
 ### One webhook URL or three?
@@ -250,11 +269,22 @@ All access tokens encrypted at rest with `ENCRYPTION_KEY` (see
 
 ### Rate limits (so we plan for them)
 
-| Platform           | Limit                                          | What we do                                 |
-| ------------------ | ---------------------------------------------- | ------------------------------------------ |
-| Messenger Send API | 250 calls/sec per app                          | BullMQ worker rate-limits per page         |
-| Instagram Send     | 200 calls/hour per IG user                     | back-off + retry queue                     |
-| WhatsApp Cloud     | tier-based, starts at 1k unique recipients/24h | request tier upgrade after 7-day stability |
+| Platform                              | Limit                                                           | What we do                                   |
+| ------------------------------------- | --------------------------------------------------------------- | -------------------------------------------- |
+| Messenger Send API                    | 250 calls/sec per app                                           | BullMQ worker rate-limits per page           |
+| Instagram Send                        | **200 calls/hour per IG account** (cut from 5,000 in late 2024) | back-off + retry queue; warn merchant at 80% |
+| Instagram comment/story triggered DMs | **1 DM per user per 24h** (new in 2026)                         | dedupe before enqueue                        |
+| WhatsApp Cloud                        | tier-based, starts at 1k unique recipients/24h                  | request tier upgrade after 7-day stability   |
+
+### Hard "don't do this" list (will get the app banned)
+
+| ❌ Don't                                                         | Why                                                                                                                                                                |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Use `HUMAN_AGENT` tag for AI-generated replies                   | Meta actively detects misuse and revokes API access — fastest way to lose the integration. Tag is for **real human** agents replying within the 7-day window only. |
+| Send outside-24h messages on Messenger to BD customers           | No allowed message tags exist for Bangladesh anymore; Utility Messages not available here yet.                                                                     |
+| Cold-DM users who never messaged the page                        | Spam — instant policy violation regardless of channel.                                                                                                             |
+| Send the same template to thousands of cold contacts on WhatsApp | Quality rating crashes → account restricted.                                                                                                                       |
+| Pretend the AI is a human                                        | Meta policy violation; we already show "AI" badges in the inbox, mirror that in customer-visible signals.                                                          |
 
 ### Observability (do this once, all three channels benefit)
 
@@ -273,9 +303,9 @@ Week 1      Submit Business Verification, host privacy/ToS, draft screencasts
 Week 2      Submit Meta App Review (Messenger + Instagram permissions together)
 Week 2-6    Pilot 3-5 merchants on dev-mode app
 Week 3-8    Review cycle (expect 2 rounds)
-Week 6      Phase 2 (Instagram) light surface work
+Week 6      Phase 1b (Instagram) light surface work — same OAuth, new payloads
 Week 8      Switch app to Live mode; onboard non-pilot merchants
-Week 8-10   Phase 3 build: WA webhook, templates, Embedded Signup
+Week 8-10   Phase 2 build: WA Cloud API webhook, templates, Embedded Signup
 Week 9      Submit WA templates (parallel with build)
 Week 12     First merchant on WhatsApp through Jobab
 ```
@@ -296,7 +326,7 @@ Realistic: add 2–4 weeks of slack for Meta review rejections.
 
 ---
 
-## Open questions to resolve before Phase 3
+## Open questions to resolve before Phase 2 (WhatsApp)
 
 - **WA pricing model for merchants:** passthrough, flat bundle, or tiered? Decide before we onboard merchant #5 on WhatsApp.
 - **Do we host the WABA or does the merchant?** Embedded Signup says merchant hosts; this is cleaner legally but harder to onboard. Recommend: merchant hosts, Jobab assists.
