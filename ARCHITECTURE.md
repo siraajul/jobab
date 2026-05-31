@@ -373,7 +373,8 @@ app/<route>/
   `useEffect`, all `usePoll`, all `api.*` calls live here. The
   orchestrator and the sections call into it; they never touch the API
   directly. When you're debugging "how did this value get mutated?" the
-  answer is always in this one file.
+  answer is always in this one file — or, when the route grows past
+  ~300 LOC, in a sibling split alongside it (see the inbox example).
 - **Each `<Section>.tsx` is stateless.** Receives the slice of state it
   needs as props. Fires callbacks up. Easy to test, easy to reuse, easy
   to delete.
@@ -401,7 +402,8 @@ A multi-step wizard, one file per step:
 app/onboarding/
   page.tsx              server: fetches initial OnboardingStatus
   OnboardingClient.tsx  orchestrator (135 LOC): header, progress, step switch
-  useOnboardingState.ts state (285 LOC): every step's state + all mutations
+  useOnboardingState.ts state (231 LOC): every step's state + all mutations
+  steps.ts              constants + CsvFile + splitCsvRow (pure, no React)
   Primary.tsx           shared brand submit button
   ShopNameStep.tsx      ┐
   ConnectPageStep.tsx   │
@@ -414,6 +416,31 @@ app/onboarding/
 
 The orchestrator's whole job is a `switch (step)` rendering the right
 step component with the right props from the hook. That's it.
+
+### When the state hook outgrows one file: `app/inbox/`
+
+Some routes (the inbox in particular) accumulate enough state, polling,
+and optimistic mutations that a single `use<Route>State.ts` becomes hard
+to navigate. The pattern is to split along clear seams, keeping the
+top-level hook as a composer:
+
+```
+app/inbox/
+  page.tsx               server: fetches initial conversations/threads/orders
+  InboxClient.tsx        orchestrator: layout, view switching, keybindings
+  useInboxState.ts       composer (~105 LOC): wires the three below + derived
+  useInboxData.ts        data + 3s poll + reference fetches (members/tags/shop)
+  useInboxMutations.ts   takeOver/handBack/assign/tag/send (optimistic + rollback)
+  filters.ts             pure Filter/Sort/ChannelFilter + applyFilters + counts
+  ConversationList.tsx   ┐
+  Thread.tsx             │ sections
+  ThreadHeader.tsx       │
+  …                      ┘
+```
+
+`InboxClient` still calls `useInboxState({...})` and reads the same flat
+shape it always did — the split is invisible to consumers. `filters.ts`
+in particular is React-free and unit-testable on its own.
 
 ### Shared web pieces
 
