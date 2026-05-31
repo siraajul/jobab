@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
@@ -12,7 +11,7 @@ import {
 import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { PrismaService } from '../prisma/prisma.service';
+import { AcceptInviteBodySchema, LoginBodySchema, SignUpBodySchema } from '@jobab/shared';
 import { EnvService } from '../config/env.service';
 import {
   ApiAuthCookie,
@@ -26,26 +25,7 @@ import { AuthService } from './auth.service';
 import { SESSION_COOKIE, SessionService } from './session.service';
 import { Public } from './auth.guard';
 
-const LoginBody = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-});
-
-const SignUpBody = z.object({
-  email: z.string().email(),
-  password: z.string().min(8).max(200),
-  name: z.string().min(1).max(120),
-  organizationName: z.string().min(1).max(120),
-});
-
-const AcceptInviteBody = z.object({
-  token: z.string().min(1),
-  name: z.string().min(1).max(120),
-  password: z.string().min(8).max(200),
-});
-
 const SetActiveOrgBody = z.object({ organizationId: z.string().min(1) });
-
 const InspectInviteQuery = z.object({ token: z.string().min(1) });
 
 @ApiTags('auth')
@@ -54,7 +34,6 @@ export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly session: SessionService,
-    private readonly prisma: PrismaService,
     private readonly env: EnvService,
   ) {}
 
@@ -77,7 +56,7 @@ export class AuthController {
   })
   @ApiBadRequest('Bad email / password.')
   async login(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
-    const { email, password } = LoginBody.parse(body);
+    const { email, password } = LoginBodySchema.parse(body);
     const { user, cookie } = await this.auth.login(email, password);
     this.setCookie(res, SESSION_COOKIE, cookie.value, cookie.maxAge);
     if (user.memberships.length > 0) {
@@ -105,52 +84,11 @@ export class AuthController {
   })
   @ApiBadRequest('Email already registered.')
   async signUp(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
-    const data = SignUpBody.parse(body);
-    const existing = await this.prisma.user.findUnique({
-      where: { email: data.email.toLowerCase() },
-    });
-    if (existing) throw new BadRequestException('email already registered');
-
-    const passwordHash = await this.auth.hashPassword(data.password);
-    const result = await this.prisma.$transaction(async (tx) => {
-      const org = await tx.organization.create({
-        data: {
-          name: data.organizationName,
-          status: 'onboarding',
-        },
-      });
-      const user = await tx.user.create({
-        data: {
-          email: data.email.toLowerCase(),
-          name: data.name,
-          passwordHash,
-        },
-      });
-      await tx.membership.create({
-        data: { userId: user.id, organizationId: org.id, role: 'owner' },
-      });
-      await tx.auditEvent.create({
-        data: {
-          organizationId: org.id,
-          actorUserId: user.id,
-          action: 'organization.created',
-          targetType: 'organization',
-          targetId: org.id,
-          metadata: { via: 'sign-up' },
-        },
-      });
-      return { user, org };
-    });
-
-    const cookie = this.session.sign(result.user.id);
+    const data = SignUpBodySchema.parse(body);
+    const { user, organizationId, cookie } = await this.auth.signUp(data);
     this.setCookie(res, SESSION_COOKIE, cookie.value, cookie.maxAge);
-    this.setCookie(res, 'jobab_org', result.org.id, cookie.maxAge);
-    return {
-      userId: result.user.id,
-      email: result.user.email,
-      name: result.user.name,
-      memberships: [{ id: '', organizationId: result.org.id, role: 'owner' as const }],
-    };
+    this.setCookie(res, 'jobab_org', organizationId, cookie.maxAge);
+    return user;
   }
 
   @Public()
@@ -168,26 +106,9 @@ export class AuthController {
   })
   @ApiZodOk('InvitePreview', 'What the invite is for.')
   @ApiBadRequest('Invite invalid, already accepted, or expired.')
-  async inspectInvite(@Req() req: Request) {
+  inspectInvite(@Req() req: Request) {
     const { token } = InspectInviteQuery.parse(req.query);
-    const hash = this.session.hashInviteToken(token);
-    const invite = await this.prisma.invite.findUnique({
-      where: { tokenHash: hash },
-      include: {
-        organization: { select: { name: true } },
-        invitedBy: { select: { name: true, email: true } },
-      },
-    });
-    if (!invite || invite.acceptedAt || invite.expiresAt < new Date()) {
-      throw new BadRequestException('invite invalid or expired');
-    }
-    return {
-      email: invite.email,
-      role: invite.role,
-      organizationName: invite.organization.name,
-      invitedBy: invite.invitedBy.name ?? invite.invitedBy.email,
-      expiresAt: invite.expiresAt.toISOString(),
-    };
+    return this.auth.inspectInvite(token);
   }
 
   @Post('logout')
@@ -248,9 +169,7 @@ export class AuthController {
     const cookie = req.cookies?.[SESSION_COOKIE];
     const user = await this.auth.loadFromSession(cookie);
     if (!user) throw new UnauthorizedException();
-    if (!user.memberships.some((m) => m.organizationId === organizationId)) {
-      throw new BadRequestException('not a member of that organization');
-    }
+    this.auth.assertMembership(user, organizationId);
     this.setCookie(res, 'jobab_org', organizationId, 60 * 60 * 24 * 14);
     return { ok: true, organizationId };
   }
@@ -269,51 +188,10 @@ export class AuthController {
   @ApiInlineOk('Invite accepted, session set.', { ok: true })
   @ApiBadRequest('Invite invalid, expired, or already accepted.')
   async acceptInvite(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
-    const { token, name, password } = AcceptInviteBody.parse(body);
-    const hash = this.session.hashInviteToken(token);
-    const invite = await this.prisma.invite.findUnique({ where: { tokenHash: hash } });
-    if (!invite || invite.acceptedAt || invite.expiresAt < new Date()) {
-      throw new BadRequestException('invite invalid or expired');
-    }
-
-    const passwordHash = await this.auth.hashPassword(password);
-    const result = await this.prisma.$transaction(async (tx) => {
-      const existing = await tx.user.findUnique({ where: { email: invite.email.toLowerCase() } });
-      const user = existing
-        ? await tx.user.update({
-            where: { id: existing.id },
-            data: { name, passwordHash },
-          })
-        : await tx.user.create({
-            data: { email: invite.email.toLowerCase(), name, passwordHash },
-          });
-      await tx.membership.upsert({
-        where: {
-          userId_organizationId: { userId: user.id, organizationId: invite.organizationId },
-        },
-        update: { role: invite.role },
-        create: { userId: user.id, organizationId: invite.organizationId, role: invite.role },
-      });
-      await tx.invite.update({
-        where: { id: invite.id },
-        data: { acceptedAt: new Date() },
-      });
-      await tx.auditEvent.create({
-        data: {
-          organizationId: invite.organizationId,
-          actorUserId: user.id,
-          action: 'member.joined',
-          targetType: 'user',
-          targetId: user.id,
-          metadata: { role: invite.role, via: 'invite' },
-        },
-      });
-      return user;
-    });
-
-    const cookie = this.session.sign(result.id);
+    const data = AcceptInviteBodySchema.parse(body);
+    const { organizationId, cookie } = await this.auth.acceptInvite(data);
     this.setCookie(res, SESSION_COOKIE, cookie.value, cookie.maxAge);
-    this.setCookie(res, 'jobab_org', invite.organizationId, cookie.maxAge);
+    this.setCookie(res, 'jobab_org', organizationId, cookie.maxAge);
     return { ok: true };
   }
 

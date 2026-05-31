@@ -1,25 +1,9 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  Get,
-  Post,
-  Query,
-  Res,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Res } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
-import { Platform } from '@prisma/client';
-import {
-  ConnectFacebookPagesBodySchema,
-  ConnectPageBodySchema,
-  type FacebookPageOption,
-} from '@jobab/shared';
+import { ConnectFacebookPagesBodySchema, ConnectPageBodySchema } from '@jobab/shared';
 import { OrgId, Public } from '../auth/auth.guard';
-import { EncryptionService } from '../common/encryption/encryption.service';
 import { EnvService } from '../config/env.service';
-import { PrismaService } from '../prisma/prisma.service';
 import {
   ApiAuthCookie,
   ApiAuthErrors,
@@ -29,6 +13,7 @@ import {
 } from '../swagger/decorators';
 import { FacebookOAuthService } from './facebook-oauth.service';
 import { OAuthSessionStore } from './oauth-session.store';
+import { OnboardingService } from './onboarding.service';
 
 @ApiTags('onboarding')
 @ApiAuthCookie()
@@ -36,8 +21,7 @@ import { OAuthSessionStore } from './oauth-session.store';
 @Controller('onboarding')
 export class OnboardingController {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly encryption: EncryptionService,
+    private readonly svc: OnboardingService,
     private readonly env: EnvService,
     private readonly facebook: FacebookOAuthService,
     private readonly oauthStore: OAuthSessionStore,
@@ -51,21 +35,8 @@ export class OnboardingController {
       'The dashboard renders a checklist off this; once all three are `true` the org is live.',
   })
   @ApiZodOk('OnboardingStatus', 'Booleans + supporting counters.')
-  async status(@OrgId() orgId: string) {
-    const [org, productCount, pageCount] = await Promise.all([
-      this.prisma.organization.findUniqueOrThrow({ where: { id: orgId } }),
-      this.prisma.product.count({ where: { organizationId: orgId } }),
-      this.prisma.page.count({ where: { organizationId: orgId } }),
-    ]);
-    return {
-      pageConnected: pageCount > 0,
-      catalogLoaded: productCount > 0,
-      aiInstructionsSet: !!org.aiInstructions?.trim(),
-      ready: pageCount > 0 && productCount > 0 && !!org.aiInstructions?.trim(),
-      productCount,
-      pageCount,
-      catalogSource: org.catalogSource,
-    };
+  status(@OrgId() orgId: string) {
+    return this.svc.getStatus(orgId);
   }
 
   @Post('pages')
@@ -84,23 +55,8 @@ export class OnboardingController {
     status: 'connected',
     webhookSubscribed: false,
   })
-  async connectPage(@OrgId() orgId: string, @Body() body: unknown) {
-    const { externalPageId, accessToken, platform } = ConnectPageBodySchema.parse(body);
-    const encrypted = this.encryption.encrypt(accessToken);
-    return this.prisma.page.upsert({
-      where: {
-        platform_externalPageId: { platform: platform as Platform, externalPageId },
-      },
-      update: { accessToken: encrypted, organizationId: orgId, status: 'connected' },
-      create: {
-        organizationId: orgId,
-        platform: platform as Platform,
-        externalPageId,
-        accessToken: encrypted,
-        status: 'connected',
-        webhookSubscribed: false,
-      },
-    });
+  connectPage(@OrgId() orgId: string, @Body() body: unknown) {
+    return this.svc.connectPage(orgId, ConnectPageBodySchema.parse(body));
   }
 
   // ─── Facebook OAuth ──────────────────────────────────────────────────
@@ -168,11 +124,8 @@ export class OnboardingController {
     if (!orgId) {
       return res.redirect(this.webCallbackUrl('?fb=error&reason=state_expired'));
     }
-
     try {
-      const shortLived = await this.facebook.exchangeCodeForUserToken(code, this.callbackUri());
-      const longLived = await this.facebook.exchangeForLongLivedUserToken(shortLived);
-      this.oauthStore.putToken(orgId, this.encryption.encrypt(longLived));
+      await this.svc.completeFacebookOAuth(orgId, code, this.callbackUri());
       res.redirect(this.webCallbackUrl('?fb=connected'));
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'unknown';
@@ -199,16 +152,7 @@ export class OnboardingController {
     ],
   })
   async listFacebookPages(@OrgId() orgId: string) {
-    const userToken = this.readFbToken(orgId);
-    const pages = await this.facebook.listManagedPages(userToken);
-    const options: FacebookPageOption[] = pages.map((p) => ({
-      pageId: p.pageId,
-      name: p.name,
-      category: p.category,
-      instagramBusinessAccountId: p.instagramBusinessAccountId,
-      instagramUsername: p.instagramUsername,
-    }));
-    return { pages: options };
+    return { pages: await this.svc.listFacebookPages(orgId) };
   }
 
   @Post('facebook/connect')
@@ -237,107 +181,14 @@ export class OnboardingController {
     ],
   })
   async connectFacebookPages(@OrgId() orgId: string, @Body() body: unknown) {
-    const { pageIds, includeInstagram } = ConnectFacebookPagesBodySchema.parse(body);
-    const userToken = this.readFbToken(orgId);
-    const managed = await this.facebook.listManagedPages(userToken);
-    const picked = managed.filter((p) => pageIds.includes(p.pageId));
-    if (picked.length === 0) {
-      throw new BadRequestException("none of the picked page IDs match the merchant's pages");
-    }
-
-    const connected: Array<{
-      pageId: string;
-      platform: Platform;
-      name: string;
-      webhookSubscribed: boolean;
-    }> = [];
-
-    for (const page of picked) {
-      const subscribed = await this.facebook.subscribePageToWebhook(
-        page.pageId,
-        page.pageAccessToken,
-      );
-      await this.prisma.page.upsert({
-        where: {
-          platform_externalPageId: {
-            platform: 'facebook' as Platform,
-            externalPageId: page.pageId,
-          },
-        },
-        update: {
-          accessToken: this.encryption.encrypt(page.pageAccessToken),
-          organizationId: orgId,
-          status: 'connected',
-          webhookSubscribed: subscribed,
-        },
-        create: {
-          organizationId: orgId,
-          platform: 'facebook' as Platform,
-          externalPageId: page.pageId,
-          accessToken: this.encryption.encrypt(page.pageAccessToken),
-          status: 'connected',
-          webhookSubscribed: subscribed,
-        },
-      });
-      connected.push({
-        pageId: page.pageId,
-        platform: 'facebook' as Platform,
-        name: page.name,
-        webhookSubscribed: subscribed,
-      });
-
-      if (includeInstagram && page.instagramBusinessAccountId) {
-        // IG Business Account uses the linked Page's access token.
-        await this.prisma.page.upsert({
-          where: {
-            platform_externalPageId: {
-              platform: 'instagram' as Platform,
-              externalPageId: page.instagramBusinessAccountId,
-            },
-          },
-          update: {
-            accessToken: this.encryption.encrypt(page.pageAccessToken),
-            organizationId: orgId,
-            status: 'connected',
-            webhookSubscribed: subscribed,
-          },
-          create: {
-            organizationId: orgId,
-            platform: 'instagram' as Platform,
-            externalPageId: page.instagramBusinessAccountId,
-            accessToken: this.encryption.encrypt(page.pageAccessToken),
-            status: 'connected',
-            webhookSubscribed: subscribed,
-          },
-        });
-        connected.push({
-          pageId: page.instagramBusinessAccountId,
-          platform: 'instagram' as Platform,
-          name: page.instagramUsername ?? page.name,
-          webhookSubscribed: subscribed,
-        });
-      }
-    }
-
-    this.oauthStore.clearToken(orgId);
+    const connected = await this.svc.connectFacebookPages(
+      orgId,
+      ConnectFacebookPagesBodySchema.parse(body),
+    );
     return { connected };
   }
 
   // ─── helpers ────────────────────────────────────────────────────────
-
-  private readFbToken(orgId: string): string {
-    const enc = this.oauthStore.peekToken(orgId);
-    if (!enc) {
-      throw new UnauthorizedException(
-        'no Facebook OAuth session — restart by hitting POST /onboarding/facebook/start',
-      );
-    }
-    try {
-      return this.encryption.decrypt(enc);
-    } catch {
-      throw new UnauthorizedException('Facebook OAuth session is malformed; restart the flow');
-    }
-  }
 
   private callbackUri(): string {
     return `${this.env.get('PUBLIC_URL')}/onboarding/facebook/callback`;
