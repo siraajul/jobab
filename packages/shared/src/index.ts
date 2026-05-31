@@ -18,5 +18,7 @@ export * from './product';
 export * from './analytics';
 export * from './onboarding';
 export * from './settings';
+export * from './team';
+export * from './comments';
 export * from './tools';
 export * from './webhooks';

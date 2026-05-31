@@ -63,48 +63,8 @@ export class ApiError extends Error {
   }
 }
 
-export interface CurrentUser {
-  userId: string;
-  email: string;
-  name: string | null;
-  memberships: Array<{ id: string; organizationId: string; role: 'owner' | 'admin' | 'agent' }>;
-}
-
-export interface MemberRow {
-  id: string;
-  role: 'owner' | 'admin' | 'agent';
-  user: { id: string; email: string; name: string | null };
-  createdAt: string;
-}
-
-export interface InviteRow {
-  id: string;
-  email: string;
-  role: 'owner' | 'admin' | 'agent';
-  expiresAt: string;
-  createdAt: string;
-}
-
-export interface CommentRow {
-  id: string;
-  postId: string;
-  commenterName: string | null;
-  content: string;
-  intent: 'price' | 'buy' | 'question' | 'other' | 'spam' | null;
-  intentConfidence: number | null;
-  publicReplySent: boolean;
-  publicReplyText: string | null;
-  privateReplySent: boolean;
-  privateReply: { id: string; externalUserId: string; customerName: string | null } | null;
-  createdAt: string;
-}
-
-export interface CommentRule {
-  intent: 'price' | 'buy' | 'question' | 'other' | 'spam';
-  replyMode: 'ai' | 'manual' | 'off';
-  publicTemplate: string | null;
-  privateAllowed: boolean;
-}
+export type { CurrentUser, MemberRow, InviteRow, CommentRow, CommentRule } from '@jobab/shared';
+import type { CurrentUser, MemberRow, InviteRow, CommentRow, CommentRule } from '@jobab/shared';
 
 export const api = {
   // ─── auth ──────────────────────────────────────────────────────────────
