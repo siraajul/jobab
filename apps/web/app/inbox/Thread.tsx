@@ -6,7 +6,7 @@ import { MessageBubble } from '@/components/inbox/MessageBubble';
 import { TagBar } from '@/components/inbox/TagBar';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { JamdaniMark } from '@/components/shared/Jamdani';
-import { usePrevious } from '@/lib/use-poll';
+import { usePrevious } from '@/lib/hooks/use-poll';
 import type { MemberRow } from '@/lib/api';
 import type { ConversationDetail, ConversationTag, Tag } from '@/lib/types';
 import { HandoffBanner } from './HandoffBanner';

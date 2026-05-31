@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { usePoll } from '@/lib/use-poll';
+import { usePoll } from '@/lib/hooks/use-poll';
 import { api, type MemberRow } from '@/lib/api';
 import type { ConversationDetail, ConversationListItem, Order, Tag } from '@/lib/types';
 import { sameOrder } from './filters';

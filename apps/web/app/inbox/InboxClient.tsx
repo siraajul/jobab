@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { NavRail } from '@/components/layout/NavRail';
 import { Drawer } from '@/components/inbox/Drawer';
 import { useToast } from '@/components/shared/Toast';
-import { useTabBadge } from '@/lib/use-tab-badge';
+import { useTabBadge } from '@/lib/hooks/use-tab-badge';
 import { api } from '@/lib/api';
 import { MobileNav, type MobileView } from '@/components/inbox/MobileNav';
 import { RightRail } from '@/components/inbox/RightRail';

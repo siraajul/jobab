@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useToast } from '@/components/shared/Toast';
-import { usePoll } from '@/lib/use-poll';
+import { usePoll } from '@/lib/hooks/use-poll';
 import { api } from '@/lib/api';
 import type { OrderListItem } from '@/lib/types';
 

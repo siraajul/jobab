@@ -6,7 +6,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { JamdaniMark } from '@/components/shared/Jamdani';
 import { useToast } from '@/components/shared/Toast';
-import { usePoll } from '@/lib/use-poll';
+import { usePoll } from '@/lib/hooks/use-poll';
 import { api, type CommentRow, type CommentRule } from '@/lib/api';
 import { cn } from '@/lib/cn';
 
@@ -168,7 +168,12 @@ function IntentChip({
             ? 'bg-red-bg text-red'
             : 'bg-surface-2 text-ink-2';
   return (
-    <span className={cn('rounded-full px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.14em]', tone)}>
+    <span
+      className={cn(
+        'rounded-full px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.14em]',
+        tone,
+      )}
+    >
       {intent}
       {typeof confidence === 'number' && (
         <span className="ml-1 opacity-60">{Math.round(confidence * 100)}%</span>
@@ -205,11 +210,15 @@ function RulesPanel({
         </div>
       </div>
       <p className="mt-1 text-[12.5px] text-ink-2">
-        For each intent, decide whether the AI replies publicly, what it says, and whether to open a DM.
+        For each intent, decide whether the AI replies publicly, what it says, and whether to open a
+        DM.
       </p>
       <div className="mt-3 space-y-3">
         {rules.map((r) => (
-          <div key={r.intent} className="grid grid-cols-1 gap-2 rounded-xl bg-surface-2 p-3 text-[13px] sm:grid-cols-[80px_120px_1fr_120px] sm:items-center">
+          <div
+            key={r.intent}
+            className="grid grid-cols-1 gap-2 rounded-xl bg-surface-2 p-3 text-[13px] sm:grid-cols-[80px_120px_1fr_120px] sm:items-center"
+          >
             <div className="font-bold uppercase tracking-[0.14em] text-ink">{r.intent}</div>
             <select
               value={r.replyMode}
@@ -224,7 +233,13 @@ function RulesPanel({
               type="text"
               value={r.publicTemplate ?? ''}
               placeholder="public reply template (Banglish ok)"
-              onChange={(e) => onChange(rules.map((rr) => (rr.intent === r.intent ? { ...rr, publicTemplate: e.target.value } : rr)))}
+              onChange={(e) =>
+                onChange(
+                  rules.map((rr) =>
+                    rr.intent === r.intent ? { ...rr, publicTemplate: e.target.value } : rr,
+                  ),
+                )
+              }
               onBlur={(e) => update(r, { publicTemplate: e.target.value || null })}
               className="rounded-md border border-border-2 bg-surface px-2 py-1.5 text-[12.5px]"
             />

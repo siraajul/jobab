@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { JamdaniMark } from '@/components/shared/Jamdani';
-import { usePoll } from '@/lib/use-poll';
+import { usePoll } from '@/lib/hooks/use-poll';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/cn';
 import type { AnalyticsSummary } from '@/lib/types';
@@ -19,16 +19,24 @@ export function AnalyticsClient({ initial }: { initial: AnalyticsSummary | null 
   const [days, setDays] = useState(7);
   const [data, setData] = useState(initial);
 
-  usePoll(async () => {
-    try {
-      setData(await api.analytics(days));
-    } catch { /* offline */ }
-  }, 8000, [days]);
+  usePoll(
+    async () => {
+      try {
+        setData(await api.analytics(days));
+      } catch {
+        /* offline */
+      }
+    },
+    8000,
+    [days],
+  );
 
   return (
     <AppShell
       title="Analytics"
-      subtitle={data ? `${formatRange(data.range.from)} → ${formatRange(data.range.to)}` : 'Loading…'}
+      subtitle={
+        data ? `${formatRange(data.range.from)} → ${formatRange(data.range.to)}` : 'Loading…'
+      }
       actions={
         <div className="flex flex-wrap gap-1.5">
           {RANGES.map((r) => (
@@ -36,7 +44,9 @@ export function AnalyticsClient({ initial }: { initial: AnalyticsSummary | null 
               key={r.key}
               onClick={async () => {
                 setDays(r.key);
-                try { setData(await api.analytics(r.key)); } catch {}
+                try {
+                  setData(await api.analytics(r.key));
+                } catch {}
               }}
               className={cn(
                 'rounded-full px-3 py-1.5 text-[12px] font-semibold transition',
@@ -99,8 +109,18 @@ export function AnalyticsClient({ initial }: { initial: AnalyticsSummary | null 
               </div>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-6">
-              <Bar label="In" tone="bg-accent" n={data.messages.in} total={data.messages.in + data.messages.out} />
-              <Bar label="Out" tone="bg-you" n={data.messages.out} total={data.messages.in + data.messages.out} />
+              <Bar
+                label="In"
+                tone="bg-accent"
+                n={data.messages.in}
+                total={data.messages.in + data.messages.out}
+              />
+              <Bar
+                label="Out"
+                tone="bg-you"
+                n={data.messages.out}
+                total={data.messages.in + data.messages.out}
+              />
             </div>
           </div>
 
@@ -144,10 +164,13 @@ function BigStat({
   } as const;
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-      <div className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-3">
-        {label}
-      </div>
-      <div className={cn('mt-2 truncate font-display text-[32px] font-bold leading-none tabular-nums tracking-display sm:text-[40px]', colorMap[tone])}>
+      <div className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-3">{label}</div>
+      <div
+        className={cn(
+          'mt-2 truncate font-display text-[32px] font-bold leading-none tabular-nums tracking-display sm:text-[40px]',
+          colorMap[tone],
+        )}
+      >
         {value}
       </div>
       <div className="mt-2 text-[12.5px] text-ink-2">{sublabel}</div>
@@ -160,7 +183,9 @@ function Bar({ label, n, total, tone }: { label: string; n: number; total: numbe
   return (
     <div>
       <div className="flex items-baseline justify-between">
-        <div className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-3">{label}</div>
+        <div className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-3">
+          {label}
+        </div>
         <div className="font-display text-[22px] font-bold tabular-nums">{n}</div>
       </div>
       <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-2">
