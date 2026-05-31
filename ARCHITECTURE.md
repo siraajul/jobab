@@ -193,7 +193,6 @@ This is the headline list. The deep "why we picked each library" lives in
 ├── packages/
 │   └── shared/         Zod schemas + types both apps depend on
 ├── docs/               The actual markdown source (renders on GitHub too)
-├── design-prototype/   Original Claude Design prototype, kept as reference
 ├── docker-compose.yml  Postgres (pgvector) + Redis
 └── ARCHITECTURE.md     this file
 ```
