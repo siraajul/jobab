@@ -32,3 +32,9 @@ allowBuilds:
   prisma: true
   simple-git-hooks: true
   unrs-resolver: true
+
+# msw ships a postinstall that nags about running `msw init public/`.
+# We don't need the auto-init (jest runs in node, not the browser), so
+# tell pnpm to ignore the build script silently instead of erroring.
+ignoredBuiltDependencies:
+  - msw

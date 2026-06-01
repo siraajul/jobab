@@ -33,3 +33,7 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+.jobab/
+
+# graphify — regenerable knowledge graph (run `graphify update .` locally)
+graphify-out/

@@ -15,6 +15,7 @@
     "typecheck": "pnpm -r --filter=./apps/* --filter=./packages/* typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,md,json,yaml,yml,css}\" --ignore-path .gitignore",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,md,json,yaml,yml,css}\" --ignore-path .gitignore",
+    "up": "bash scripts/up.sh",
     "infra:up": "docker compose up -d",
     "infra:down": "docker compose down",
     "db:migrate": "pnpm --filter @jobab/backend prisma:migrate",
@@ -25,13 +26,13 @@
     "prepare": "simple-git-hooks || true"
   },
   "devDependencies": {
-    "@commitlint/cli": "^19.5.0",
-    "@commitlint/config-conventional": "^19.5.0",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
     "eslint": "^8.57.1",
-    "lint-staged": "^15.2.10",
-    "prettier": "^3.3.3",
-    "simple-git-hooks": "^2.11.1",
-    "typescript": "^5.5.4"
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.8.3",
+    "simple-git-hooks": "^2.13.1",
+    "typescript": "^5.9.3"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm lint-staged",
