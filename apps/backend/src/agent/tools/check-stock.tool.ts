@@ -23,7 +23,11 @@ export const checkStockTool: Tool = {
   async execute(input: unknown, ctx: ToolContext) {
     const { product_id, variant_id } = Input.parse(input);
     const variant = await ctx.prisma.productVariant.findFirst({
-      where: { id: variant_id, productId: product_id, product: { organizationId: ctx.organizationId } },
+      where: {
+        id: variant_id,
+        productId: product_id,
+        product: { organizationId: ctx.organizationId },
+      },
     });
     if (!variant) return { in_stock: false, stock_qty: 0, price: 0, error: 'unknown_variant' };
     return {

@@ -48,17 +48,30 @@ export class OnboardingService {
    * for WhatsApp + pre-app-review pilot setups. The OAuth-driven path is
    * `completeFacebookOAuth` / `connectFacebookPages` below.
    */
-  connectPage(
+  async connectPage(
     orgId: string,
     input: { externalPageId: string; accessToken: string; platform: string },
   ) {
+    await this.facebook.verifyPageAccess(
+      input.platform as Platform,
+      input.externalPageId,
+      input.accessToken,
+    );
     const encrypted = this.encryption.encrypt(input.accessToken);
     const platform = input.platform as Platform;
     return this.prisma.page.upsert({
       where: {
         platform_externalPageId: { platform, externalPageId: input.externalPageId },
+        organizationId: orgId,
       },
-      update: { accessToken: encrypted, organizationId: orgId, status: 'connected' },
+      update: { accessToken: encrypted, status: 'connected' },
+      select: {
+        id: true,
+        platform: true,
+        externalPageId: true,
+        status: true,
+        webhookSubscribed: true,
+      },
       create: {
         organizationId: orgId,
         platform,
@@ -105,6 +118,7 @@ export class OnboardingService {
   ): Promise<ConnectedPage[]> {
     const userToken = this.readFbToken(orgId);
     const managed = await this.facebook.listManagedPages(userToken);
+    const connectedFacebookUserId = await this.facebook.getUserId(userToken);
     const picked = managed.filter((p) => input.pageIds.includes(p.pageId));
     if (picked.length === 0) {
       throw new BadRequestException("none of the picked page IDs match the merchant's pages");
@@ -117,7 +131,14 @@ export class OnboardingService {
         page.pageAccessToken,
       );
       const encryptedToken = this.encryption.encrypt(page.pageAccessToken);
-      await this.upsertPage(orgId, 'facebook', page.pageId, encryptedToken, subscribed);
+      await this.upsertPage(
+        orgId,
+        'facebook',
+        page.pageId,
+        encryptedToken,
+        subscribed,
+        connectedFacebookUserId,
+      );
       connected.push({
         pageId: page.pageId,
         platform: 'facebook',
@@ -133,6 +154,7 @@ export class OnboardingService {
           page.instagramBusinessAccountId,
           encryptedToken,
           subscribed,
+          connectedFacebookUserId,
         );
         connected.push({
           pageId: page.instagramBusinessAccountId,
@@ -153,12 +175,13 @@ export class OnboardingService {
     externalPageId: string,
     encryptedAccessToken: string,
     subscribed: boolean,
+    connectedFacebookUserId: string,
   ) {
     return this.prisma.page.upsert({
-      where: { platform_externalPageId: { platform, externalPageId } },
+      where: { platform_externalPageId: { platform, externalPageId }, organizationId: orgId },
       update: {
         accessToken: encryptedAccessToken,
-        organizationId: orgId,
+        connectedFacebookUserId,
         status: 'connected',
         webhookSubscribed: subscribed,
       },
@@ -167,6 +190,7 @@ export class OnboardingService {
         platform,
         externalPageId,
         accessToken: encryptedAccessToken,
+        connectedFacebookUserId,
         status: 'connected',
         webhookSubscribed: subscribed,
       },

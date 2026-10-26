@@ -15,6 +15,9 @@ export interface EmbeddingProvider {
   /** Available — true if the provider has credentials configured. */
   readonly available: boolean;
 
-  embedText(input: string): Promise<number[] | null>;
+  embedText(
+    input: string,
+    task?: 'retrieval.query' | 'retrieval.passage',
+  ): Promise<number[] | null>;
   embedImage(imageUrl: string): Promise<number[] | null>;
 }

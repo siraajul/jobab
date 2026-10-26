@@ -30,3 +30,11 @@ export const InvitePreviewSchema = z.object({
   expiresAt: z.string(),
 });
 export type InvitePreview = z.infer<typeof InvitePreviewSchema>;
+
+export const ForgotPasswordBodySchema = z.object({ email: z.string().email() });
+export const ResetPasswordBodySchema = z.object({
+  token: z.string().min(32).max(200),
+  password: z.string().min(12).max(72),
+});
+export type ForgotPasswordBody = z.infer<typeof ForgotPasswordBodySchema>;
+export type ResetPasswordBody = z.infer<typeof ResetPasswordBodySchema>;

@@ -51,6 +51,7 @@ export const createOrderTool: Tool = {
     return ctx.guardrail.tryCreate({
       organizationId: ctx.organizationId,
       conversationId: ctx.conversationId,
+      ...(ctx.automationVersion === undefined ? {} : { automationVersion: ctx.automationVersion }),
       proposedItems: items,
     });
   },

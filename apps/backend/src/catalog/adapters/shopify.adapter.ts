@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { CatalogAdapter, CatalogProduct } from '../catalog-adapter';
 
 interface ShopifyCreds {
@@ -34,6 +35,10 @@ export class ShopifyAdapter implements CatalogAdapter {
 
   async *fetchAll(credentials: unknown): AsyncIterable<CatalogProduct[]> {
     const { shop, accessToken, apiVersion = '2024-07' } = credentials as ShopifyCreds;
+    if (!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/i.test(shop))
+      throw new BadRequestException('Use your store.myshopify.com hostname');
+    if (!/^\d{4}-\d{2}$/.test(apiVersion))
+      throw new BadRequestException('Invalid Shopify API version');
     const url = `https://${shop}/admin/api/${apiVersion}/graphql.json`;
     const headers = {
       'content-type': 'application/json',
@@ -43,18 +48,29 @@ export class ShopifyAdapter implements CatalogAdapter {
     let cursor: string | null = null;
     while (true) {
       const query = /* GraphQL */ `
-        query($cursor: String) {
+        query ($cursor: String) {
           products(first: 50, after: $cursor) {
-            pageInfo { hasNextPage endCursor }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
             edges {
               node {
                 id
                 title
                 descriptionHtml
-                featuredImage { url }
+                featuredImage {
+                  url
+                }
                 variants(first: 50) {
                   edges {
-                    node { id title sku price inventoryQuantity }
+                    node {
+                      id
+                      title
+                      sku
+                      price
+                      inventoryQuantity
+                    }
                   }
                 }
               }
@@ -64,15 +80,23 @@ export class ShopifyAdapter implements CatalogAdapter {
       `;
       const res = await fetch(url, {
         method: 'POST',
+        redirect: 'error',
+        signal: AbortSignal.timeout(15000),
         headers,
         body: JSON.stringify({ query, variables: { cursor } }),
       });
-      if (!res.ok) throw new Error(`Shopify ${res.status}: ${await res.text()}`);
+      if (!res.ok) throw new Error(`Shopify request failed (${res.status})`);
       const json = (await res.json()) as {
-        data?: { products?: { pageInfo: { hasNextPage: boolean; endCursor: string }; edges: Array<{ node: ShopifyProductNode }> } };
+        data?: {
+          products?: {
+            pageInfo: { hasNextPage: boolean; endCursor: string };
+            edges: Array<{ node: ShopifyProductNode }>;
+          };
+        };
         errors?: Array<{ message: string }>;
       };
-      if (json.errors?.length) throw new Error(`Shopify: ${json.errors.map((e) => e.message).join('; ')}`);
+      if (json.errors?.length)
+        throw new Error(`Shopify: ${json.errors.map((e) => e.message).join('; ')}`);
       const products = json.data?.products;
       if (!products) break;
 
@@ -99,5 +123,8 @@ export class ShopifyAdapter implements CatalogAdapter {
 }
 
 function stripHtml(s: string): string {
-  return s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  return s
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }

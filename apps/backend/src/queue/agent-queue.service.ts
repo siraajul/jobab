@@ -18,11 +18,21 @@ export class AgentQueueService implements OnModuleDestroy {
 
   enqueue(data: AgentJobData) {
     return this.queue.add('handle-message', data, {
+      jobId: data.messageId,
       removeOnComplete: 1000,
       removeOnFail: 5000,
       attempts: 3,
       backoff: { type: 'exponential', delay: 2000 },
     });
+  }
+
+  async health() {
+    await this.queue.getJobCounts('waiting');
+    return true;
+  }
+
+  async summary() {
+    return this.queue.getJobCounts('waiting', 'active', 'failed', 'delayed');
   }
 
   async onModuleDestroy() {

@@ -25,17 +25,19 @@ async function main() {
       status: 'active',
       catalogSource: 'csv',
       aiInstructions: [
-        "You are the Rongdhonu Boutique sales agent.",
-        "We sell handloom sarees and three-piece sets out of Dhaka.",
-        "Standard Dhaka delivery is ৳80 (2–3 days); outside Dhaka is ৳130.",
-        "Cash on delivery is fine for first orders under ৳3,000; otherwise insist on bKash advance.",
+        'You are the Rongdhonu Boutique sales agent.',
+        'We sell handloom sarees and three-piece sets out of Dhaka.',
+        'Standard Dhaka delivery is ৳80 (2–3 days); outside Dhaka is ৳130.',
+        'Cash on delivery is fine for first orders under ৳3,000; otherwise insist on bKash advance.',
         "Be warm. Use the customer's language (Bangla, Banglish, or English).",
       ].join('\n'),
     },
   });
 
   const page = await prisma.page.upsert({
-    where: { platform_externalPageId: { platform: Platform.facebook, externalPageId: 'page_rongdhonu' } },
+    where: {
+      platform_externalPageId: { platform: Platform.facebook, externalPageId: 'page_rongdhonu' },
+    },
     update: {},
     create: {
       id: 'page_rongdhonu',
@@ -160,7 +162,9 @@ async function main() {
   console.log(`  Owner login          : ${OWNER_EMAIL} / ${OWNER_PASSWORD}`);
   console.log('\nNext:');
   console.log(`  Web .env.local       NEXT_PUBLIC_ORG_ID=${org.id}`);
-  console.log(`  Send a fake msg      DEFAULT_PAGE_ID=${page.externalPageId} pnpm send -- "lal shari ache?"`);
+  console.log(
+    `  Send a fake msg      DEFAULT_PAGE_ID=${page.externalPageId} pnpm send -- "lal shari ache?"`,
+  );
 }
 
 main()

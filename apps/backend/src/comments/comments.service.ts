@@ -134,11 +134,12 @@ export class CommentsService {
     try {
       const res = await fetch(url, {
         method: 'POST',
+        signal: AbortSignal.timeout(15000),
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ message: text }),
       });
       if (!res.ok) {
-        this.log.error(`Graph comment reply ${res.status}: ${await res.text()}`);
+        this.log.error(`Graph comment reply failed (${res.status})`);
         return false;
       }
       return true;

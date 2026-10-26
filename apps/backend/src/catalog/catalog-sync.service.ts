@@ -110,6 +110,39 @@ export class CatalogSyncService {
     return saved.id;
   }
 
+  async reindex(organizationId: string, cursor?: string, limit = 10) {
+    if (!this.embeddings.available) throw new Error('Embedding provider is not configured');
+    const rows = await this.prisma.product.findMany({
+      where: { organizationId, ...(cursor ? { id: { gt: cursor } } : {}) },
+      orderBy: { id: 'asc' },
+      take: limit,
+    });
+    let indexed = 0;
+    for (const product of rows) {
+      const text = await this.embeddings.embedText(
+        [product.title, product.description].filter(Boolean).join(' — '),
+        'retrieval.passage',
+      );
+      if (!text) continue;
+      await this.prisma
+        .$executeRaw`UPDATE products SET text_embedding = ${JSON.stringify(text)}::vector,
+        text_embedding_model = 'jina-embeddings-v3:retrieval.passage:1024' WHERE id = ${product.id} AND organization_id = ${organizationId}`;
+      if (product.imageUrl) {
+        const image = await this.embeddings.embedImage(product.imageUrl);
+        if (image)
+          await this.prisma
+            .$executeRaw`UPDATE products SET image_embedding = ${JSON.stringify(image)}::vector,
+          image_embedding_model = 'jina-clip-v2:1024' WHERE id = ${product.id} AND organization_id = ${organizationId}`;
+      }
+      indexed++;
+    }
+    return {
+      scanned: rows.length,
+      indexed,
+      nextCursor: rows.length === limit ? rows[rows.length - 1].id : null,
+    };
+  }
+
   /**
    * Compute text + image embeddings and persist via raw SQL (the `vector`
    * column type is `Unsupported` in Prisma). Returns true if at least one
@@ -125,7 +158,7 @@ export class CatalogSyncService {
     let any = false;
     if (textVec) {
       await this.prisma.$executeRawUnsafe(
-        `UPDATE products SET text_embedding = $1::vector WHERE id = $2`,
+        `UPDATE products SET text_embedding = $1::vector, text_embedding_model = 'jina-embeddings-v3:retrieval.passage:1024' WHERE id = $2`,
         `[${textVec.join(',')}]`,
         productId,
       );
@@ -133,7 +166,7 @@ export class CatalogSyncService {
     }
     if (imageVec) {
       await this.prisma.$executeRawUnsafe(
-        `UPDATE products SET image_embedding = $1::vector WHERE id = $2`,
+        `UPDATE products SET image_embedding = $1::vector, image_embedding_model = 'jina-clip-v2:1024' WHERE id = $2`,
         `[${imageVec.join(',')}]`,
         productId,
       );

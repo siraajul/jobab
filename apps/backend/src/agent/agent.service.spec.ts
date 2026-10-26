@@ -22,14 +22,17 @@ type AnyFn = jest.Mock;
 function makePrisma(over: Record<string, unknown> = {}) {
   return {
     conversation: {
+      findUnique: jest.fn(async () => ({ status: 'bot', automationVersion: 0 })),
       findUniqueOrThrow: jest.fn(async () => ({
         id: 'c1',
         organizationId: 'org1',
         status: 'bot',
+        automationVersion: 0,
         organization: { aiInstructions: null },
       })),
     },
     message: {
+      findUnique: jest.fn(async () => null),
       findMany: jest.fn(async () => [
         { sender: 'customer', content: 'hi', attachments: null, createdAt: new Date() },
       ]),
@@ -45,15 +48,13 @@ function makeService(deps: Partial<Record<string, unknown>> = {}) {
   const prisma = (deps.prisma as ReturnType<typeof makePrisma>) ?? makePrisma();
   const llm = (deps.llm as LlmProvider) ?? {
     name: 'stub',
-    call: jest.fn(
-      async (): Promise<LlmCallResult> => ({
-        text: 'hello',
-        toolCalls: [],
-        inputTokens: 1,
-        outputTokens: 1,
-        costUsd: 0,
-      }),
-    ),
+    call: jest.fn(async (): Promise<LlmCallResult> => ({
+      text: 'hello',
+      toolCalls: [],
+      inputTokens: 1,
+      outputTokens: 1,
+      costUsd: 0,
+    })),
   };
   const messenger = (deps.messenger as { sendText: AnyFn }) ?? {
     sendText: jest.fn(async () => undefined),
@@ -83,11 +84,47 @@ function makeService(deps: Partial<Record<string, unknown>> = {}) {
     env as never,
     trace as never,
     {} as never, // whatsapp
+    { reserveTokens: jest.fn(async () => undefined) } as never,
   );
   return { service, prisma, llm, messenger, env, trace };
 }
 
 describe('AgentService.handleMessage', () => {
+  it('cancels an in-flight generation after takeover, including a take-back/hand-back cycle', async () => {
+    const prisma = makePrisma();
+    const llm: LlmProvider = {
+      name: 'stub',
+      call: jest.fn(async () => {
+        prisma.conversation.findUnique.mockResolvedValue({ status: 'bot', automationVersion: 2 });
+        return { text: 'stale reply', toolCalls: [], inputTokens: 1, outputTokens: 1, costUsd: 0 };
+      }),
+    };
+    const { service, messenger } = makeService({ prisma, llm });
+    await service.handleMessage('c1', 'm1');
+    expect(llm.call).toHaveBeenCalledTimes(1);
+    expect(messenger.sendText).not.toHaveBeenCalled();
+  });
+
+  it('does not run tools when a merchant takes over during the provider call', async () => {
+    const prisma = makePrisma();
+    const llm: LlmProvider = {
+      name: 'stub',
+      call: jest.fn(async () => {
+        prisma.conversation.findUnique.mockResolvedValue({ status: 'human', automationVersion: 1 });
+        return {
+          toolCalls: [{ id: 'tool1', name: 'create_order', arguments: { items: [] } }],
+          inputTokens: 1,
+          outputTokens: 1,
+          costUsd: 0,
+        };
+      }),
+    };
+    const { service, messenger } = makeService({ prisma, llm });
+    await service.handleMessage('c1', 'm1');
+    expect(messenger.sendText).not.toHaveBeenCalled();
+    expect(prisma.agentRun.create).toHaveBeenCalledTimes(1);
+  });
+
   it('uses the latest 40 messages chronologically and retains saved customer/order facts', async () => {
     const rows = Array.from({ length: 45 }, (_, index) => ({
       id: `m${index}`,
@@ -98,10 +135,12 @@ describe('AgentService.handleMessage', () => {
     }));
     const prisma = makePrisma({
       conversation: {
+        findUnique: jest.fn(async () => ({ status: 'bot', automationVersion: 0 })),
         findUniqueOrThrow: jest.fn(async () => ({
           id: 'c1',
           organizationId: 'org1',
           status: 'bot',
+          automationVersion: 0,
           organization: { aiInstructions: null },
           customerName: 'Tahmina',
           customerPhone: '01700000000',
@@ -109,6 +148,7 @@ describe('AgentService.handleMessage', () => {
         })),
       },
       message: {
+        findUnique: jest.fn(async () => null),
         findMany: jest.fn(async ({ orderBy, take }) => {
           const sorted = [...rows].sort((a, b) =>
             orderBy[0].createdAt === 'desc'
@@ -135,6 +175,7 @@ describe('AgentService.handleMessage', () => {
   it('bails early when the conversation is human (merchant takeover)', async () => {
     const prisma = makePrisma({
       conversation: {
+        findUnique: jest.fn(async () => ({ status: 'bot', automationVersion: 0 })),
         findUniqueOrThrow: jest.fn(async () => ({
           id: 'c1',
           organizationId: 'org1',
@@ -152,6 +193,7 @@ describe('AgentService.handleMessage', () => {
   it('bails early when the conversation is closed', async () => {
     const prisma = makePrisma({
       conversation: {
+        findUnique: jest.fn(async () => ({ status: 'bot', automationVersion: 0 })),
         findUniqueOrThrow: jest.fn(async () => ({
           id: 'c1',
           organizationId: 'org1',
@@ -168,7 +210,10 @@ describe('AgentService.handleMessage', () => {
   it('sends the final reply via the messenger', async () => {
     const { service, messenger } = makeService();
     await service.handleMessage('c1', 'm1');
-    expect(messenger.sendText as AnyFn).toHaveBeenCalledWith('c1', 'hello', undefined);
+    expect(messenger.sendText as AnyFn).toHaveBeenCalledWith('c1', 'hello', undefined, {
+      replyToMessageId: 'm1',
+      automationVersion: 0,
+    });
   });
 
   it('records an AgentRun even when the loop throws', async () => {

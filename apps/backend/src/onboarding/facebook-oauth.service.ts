@@ -1,3 +1,4 @@
+import type { Platform } from '@prisma/client';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import { EnvService } from '../config/env.service';
@@ -186,16 +187,40 @@ export class FacebookOAuthService {
     return appId;
   }
 
+  async getUserId(userToken: string): Promise<string> {
+    const result = await this.fetchJson<{ id?: string }>(
+      `https://graph.facebook.com/${this.env.get('META_GRAPH_VERSION')}/me?fields=id`,
+      { headers: { authorization: `Bearer ${userToken}` } },
+    );
+    if (!result.id)
+      throw new BadRequestException('Facebook did not identify the authorizing account');
+    return result.id;
+  }
+
+  async verifyPageAccess(platform: Platform, pageId: string, token: string): Promise<void> {
+    if (this.env.get('NODE_ENV') !== 'production' && token === 'dev-token-not-used-in-fake-mode')
+      return;
+    const endpoint = platform === 'facebook' ? 'me' : encodeURIComponent(pageId);
+    const result = await this.fetchJson<{ id?: string }>(
+      `https://graph.facebook.com/${this.env.get('META_GRAPH_VERSION')}/${endpoint}?fields=id`,
+      { headers: { authorization: `Bearer ${token}` } },
+    );
+    if (result.id !== pageId)
+      throw new BadRequestException('The token does not authorize this page');
+  }
+
   private async fetchJson<T>(url: string, init: RequestInit = {}): Promise<T> {
-    const res = await fetch(url, init);
+    const res = await fetch(url, { ...init, signal: AbortSignal.timeout(15000) });
     const text = await res.text();
     if (!res.ok) {
-      throw new BadRequestException(`facebook graph ${res.status}: ${text.slice(0, 400)}`);
+      throw new BadRequestException(
+        `Facebook rejected the request (${res.status}); reconnect the page`,
+      );
     }
     try {
       return JSON.parse(text) as T;
     } catch {
-      throw new BadRequestException(`facebook graph: non-JSON response: ${text.slice(0, 200)}`);
+      throw new BadRequestException('Facebook returned an invalid response');
     }
   }
 }

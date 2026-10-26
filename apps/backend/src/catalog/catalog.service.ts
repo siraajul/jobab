@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { JinaEmbeddingProvider } from '../embeddings/jina.provider';
+import { Injectable, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface CatalogSearchResult {
@@ -23,7 +25,10 @@ export interface VisualSearchResult extends CatalogSearchResult {
 
 @Injectable()
 export class CatalogService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly embeddings?: JinaEmbeddingProvider,
+  ) {}
 
   /**
    * Visual K-nearest-neighbor search via pgvector cosine similarity.
@@ -35,10 +40,29 @@ export class CatalogService {
     embedding: number[],
     k: number,
   ): Promise<VisualSearchResult[]> {
-    if (embedding.length === 0) return [];
+    return this.searchByEmbedding(organizationId, embedding, k, 'image');
+  }
+
+  async searchByEmbedding(
+    organizationId: string,
+    embedding: number[],
+    k: number,
+    kind: 'text' | 'image',
+  ): Promise<VisualSearchResult[]> {
+    if (
+      embedding.length !== 1024 ||
+      !embedding.every(Number.isFinite) ||
+      !embedding.some((v) => v !== 0)
+    )
+      return [];
+    const column = Prisma.raw(kind === 'text' ? 'p.text_embedding' : 'p.image_embedding');
+    const modelColumn = Prisma.raw(
+      kind === 'text' ? 'p.text_embedding_model' : 'p.image_embedding_model',
+    );
+    const model =
+      kind === 'text' ? 'jina-embeddings-v3:retrieval.passage:1024' : 'jina-clip-v2:1024';
     const vec = `[${embedding.join(',')}]`;
-    // Raw query — Prisma can't express pgvector ops via the schema.
-    const rows = await this.prisma.$queryRawUnsafe<
+    const rows = await this.prisma.$queryRaw<
       Array<{
         id: string;
         title: string;
@@ -48,19 +72,13 @@ export class CatalogService {
         image_url: string | null;
         distance: string | number;
       }>
-    >(
-      `SELECT p.id, p.title, p.description, p.price, p.currency, p.image_url,
-              (p.image_embedding <=> $1::vector) AS distance
-         FROM products p
-         WHERE p.organization_id = $2
-           AND p.image_embedding IS NOT NULL
-         ORDER BY p.image_embedding <=> $1::vector
-         LIMIT $3`,
-      vec,
-      organizationId,
-      k,
-    );
-
+    >(Prisma.sql`
+      SELECT p.id, p.title, p.description, p.price, p.currency, p.image_url,
+             (${column}::vector(1024) <=> ${vec}::vector(1024)) AS distance
+      FROM products p WHERE p.organization_id = ${organizationId}
+        AND ${column} IS NOT NULL AND vector_dims(${column}) = 1024 AND ${modelColumn} = ${model}
+      ORDER BY ${column}::vector(1024) <=> ${vec}::vector(1024) LIMIT ${Math.max(1, Math.min(k, 50))}
+    `);
     if (rows.length === 0) return [];
 
     const ids = rows.map((r) => r.id);
@@ -76,7 +94,7 @@ export class CatalogService {
 
     return rows.map((r) => {
       const dist = Number(r.distance);
-      const similarity = Math.max(0, Math.min(1, 1 - dist / 2));
+      const similarity = Math.max(0, Math.min(1, 1 - dist));
       const vs = byProduct.get(r.id) ?? [];
       return {
         product_id: r.id,
@@ -109,6 +127,35 @@ export class CatalogService {
     query: string,
     limit: number,
   ): Promise<CatalogSearchResult[]> {
+    const take = Math.max(1, Math.min(limit, 50));
+    const lexical = await this.keywordSearch(organizationId, query, take);
+    if (!this.embeddings?.available) return lexical;
+    const vector = await this.embeddings.embedText(query, 'retrieval.query');
+    if (!vector) return lexical;
+    const semantic = (await this.searchByEmbedding(organizationId, vector, take, 'text')).filter(
+      (result) => result.similarity >= 0.5,
+    );
+    // Reciprocal rank fusion preserves exact product names/SKUs while adding semantic matches.
+    const scores = new Map<string, { result: CatalogSearchResult; score: number }>();
+    for (const list of [lexical, semantic])
+      list.forEach((result, rank) => {
+        const previous = scores.get(result.product_id);
+        scores.set(result.product_id, {
+          result: { ...previous?.result, ...result },
+          score: (previous?.score ?? 0) + 1 / (60 + rank + 1),
+        });
+      });
+    return [...scores.values()]
+      .sort((a, b) => b.score - a.score)
+      .slice(0, take)
+      .map((item) => item.result);
+  }
+
+  private async keywordSearch(
+    organizationId: string,
+    query: string,
+    limit: number,
+  ): Promise<CatalogSearchResult[]> {
     const tokens = tokenize(query);
     if (tokens.length === 0) return [];
 
@@ -126,7 +173,8 @@ export class CatalogService {
     });
 
     const scored = products.map((p) => {
-      const hay = `${p.title} ${p.description ?? ''} ${p.variants.map((v) => v.name).join(' ')}`.toLowerCase();
+      const hay =
+        `${p.title} ${p.description ?? ''} ${p.variants.map((v) => v.name).join(' ')}`.toLowerCase();
       const score = tokens.reduce((acc, t) => acc + (hay.includes(t) ? 1 : 0), 0);
       return { p, score };
     });
@@ -151,9 +199,30 @@ export class CatalogService {
  * (Unicode category L) the same as Latin — \p{L} keeps both.
  */
 const STOPWORDS = new Set([
-  'a', 'the', 'is', 'are', 'i', 'me', 'my', 'we', 'you', 'and', 'or',
-  'ki', 'ta', 'ami', 'apnar', 'apnake', 'tomar', 'amar', 'koto', 'ache', 'achi',
-  'size', 'please', 'ektu',
+  'a',
+  'the',
+  'is',
+  'are',
+  'i',
+  'me',
+  'my',
+  'we',
+  'you',
+  'and',
+  'or',
+  'ki',
+  'ta',
+  'ami',
+  'apnar',
+  'apnake',
+  'tomar',
+  'amar',
+  'koto',
+  'ache',
+  'achi',
+  'size',
+  'please',
+  'ektu',
 ]);
 function tokenize(q: string): string[] {
   const words = q.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];

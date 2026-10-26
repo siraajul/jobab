@@ -10,12 +10,13 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import {
+  ReindexCatalogBodySchema,
   CsvSyncBodySchema,
   SetVariantStockBodySchema,
   ShopifySyncBodySchema,
   WooSyncBodySchema,
 } from '@jobab/shared';
-import { OrgId } from '../auth/auth.guard';
+import { OrgId, Roles } from '../auth/auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   ApiAuthCookie,
@@ -37,6 +38,17 @@ export class CatalogController {
     private readonly prisma: PrismaService,
     private readonly sync: CatalogSyncService,
   ) {}
+
+  @Post('embeddings/reindex')
+  @Roles('owner', 'admin')
+  @ApiOperation({
+    summary: 'Backfill catalog embeddings for this merchant; repeat with nextCursor until null',
+  })
+  @ApiZodBody('ReindexCatalogBody', 'Bounded batch; invokes the configured embedding provider.')
+  reindex(@OrgId() orgId: string, @Body() body: unknown) {
+    const { cursor, limit } = ReindexCatalogBodySchema.parse(body);
+    return this.sync.reindex(orgId, cursor, limit);
+  }
 
   @Get('products')
   @ApiOperation({

@@ -41,33 +41,36 @@ export class LangfuseService {
 
   logGeneration(
     ctx: TraceContext,
-    span: { name: string; model: string; input: unknown; output: unknown; usage?: { input: number; output: number; total: number } },
+    span: {
+      name: string;
+      model: string;
+      input: unknown;
+      output: unknown;
+      usage?: { input: number; output: number; total: number };
+    },
   ): void {
     if (!ctx.trace) return;
     ctx.trace.generation({
       name: span.name,
       model: span.model,
-      input: span.input,
-      output: span.output,
+      input: this.env.get('NODE_ENV') === 'production' ? '[redacted]' : span.input,
+      output: this.env.get('NODE_ENV') === 'production' ? '[redacted]' : span.output,
       usage: span.usage,
     });
   }
 
-  logToolCall(
-    ctx: TraceContext,
-    span: { name: string; input: unknown; output: unknown },
-  ): void {
+  logToolCall(ctx: TraceContext, span: { name: string; input: unknown; output: unknown }): void {
     if (!ctx.trace) return;
     ctx.trace.span({
       name: `tool:${span.name}`,
-      input: span.input,
-      output: span.output,
+      input: this.env.get('NODE_ENV') === 'production' ? '[redacted]' : span.input,
+      output: this.env.get('NODE_ENV') === 'production' ? '[redacted]' : span.output,
     });
   }
 
   endTrace(ctx: TraceContext, output: unknown): void {
     if (!ctx.trace) return;
-    ctx.trace.update({ output });
+    ctx.trace.update({ output: this.env.get('NODE_ENV') === 'production' ? '[redacted]' : output });
   }
 
   async flush(): Promise<void> {

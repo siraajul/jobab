@@ -86,7 +86,12 @@ export class TeamService {
     return { ok: true };
   }
 
-  async removeMember(organizationId: string, actorUserId: string, actorRole: MemberRole, membershipId: string) {
+  async removeMember(
+    organizationId: string,
+    actorUserId: string,
+    actorRole: MemberRole,
+    membershipId: string,
+  ) {
     const m = await this.prisma.membership.findFirst({
       where: { id: membershipId, organizationId },
       include: { user: true },

@@ -10,10 +10,7 @@ export class OrdersService {
     private readonly messenger: MessengerService,
   ) {}
 
-  list(
-    organizationId: string,
-    filters: { status?: OrderStatus; payment?: PaymentStatus } = {},
-  ) {
+  list(organizationId: string, filters: { status?: OrderStatus; payment?: PaymentStatus } = {}) {
     return this.prisma.order.findMany({
       where: {
         organizationId,
@@ -71,9 +68,7 @@ export class OrdersService {
               opts.trackingNote ?? 'Delivery 2-3 din e poucabe.'
             }`
           : `Apa, apnar order #${id.slice(-6).toUpperCase()} delivered hoiche 🎉. Dhonnobad! Kemon legechilo bolben?`;
-      await this.messenger
-        .sendText(updated.conversationId, body)
-        .catch(() => undefined);
+      await this.messenger.sendText(updated.conversationId, body).catch(() => undefined);
     }
     return updated;
   }

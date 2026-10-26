@@ -23,7 +23,11 @@ export class WhatsAppService {
 
   /** True if Twilio is configured (the dev/test path is a no-op log). */
   get enabled(): boolean {
-    return !!this.env.get('WA_ACCOUNT_SID') && !!this.env.get('WA_AUTH_TOKEN') && !!this.env.get('WA_FROM');
+    return (
+      !!this.env.get('WA_ACCOUNT_SID') &&
+      !!this.env.get('WA_AUTH_TOKEN') &&
+      !!this.env.get('WA_FROM')
+    );
   }
 
   /**

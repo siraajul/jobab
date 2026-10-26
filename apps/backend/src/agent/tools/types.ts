@@ -9,6 +9,7 @@ import { WhatsAppService } from '../../notifications/whatsapp.service';
 export interface ToolContext {
   organizationId: string;
   conversationId: string;
+  automationVersion?: number;
   prisma: PrismaService;
   catalog: CatalogService;
   guardrail: OrderGuardrail;

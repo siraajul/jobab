@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AgentRuntimeService } from './agent-runtime.service';
 import { AgentService } from './agent.service';
 import { GroqProvider } from './llm/groq.provider';
 import { LLM_PROVIDER } from './llm/llm.token';
@@ -12,6 +13,7 @@ import { EmbeddingsModule } from '../embeddings/embeddings.module';
   imports: [VisionModule, EmbeddingsModule],
   providers: [
     AgentService,
+    AgentRuntimeService,
     GroqProvider,
     StubLlmProvider,
     {
@@ -27,6 +29,6 @@ import { EmbeddingsModule } from '../embeddings/embeddings.module';
       inject: [ConfigService, GroqProvider, StubLlmProvider],
     },
   ],
-  exports: [AgentService],
+  exports: [AgentService, AgentRuntimeService],
 })
 export class AgentModule {}

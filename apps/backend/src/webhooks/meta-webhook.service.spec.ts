@@ -13,7 +13,7 @@ describe('MetaWebhookService.handleEntries', () => {
     prisma = {
       page: { findFirst: jest.fn(async () => ({ id: 'p1', organizationId: 'org1' })) },
       conversation: { upsert: jest.fn(async () => ({ id: 'c1', organizationId: 'org1' })) },
-      message: { create: jest.fn(async () => ({ id: 'm1' })) },
+      message: { upsert: jest.fn(async () => ({ id: 'm1' })) },
     };
     queue = { enqueue: jest.fn(async () => undefined) };
     svc = new MetaWebhookService(prisma, queue);
@@ -35,7 +35,7 @@ describe('MetaWebhookService.handleEntries', () => {
       },
     ]);
     expect(prisma.conversation.upsert).toHaveBeenCalled();
-    expect(prisma.message.create).toHaveBeenCalled();
+    expect(prisma.message.upsert).toHaveBeenCalled();
     expect(queue.enqueue).toHaveBeenCalledWith({ conversationId: 'c1', messageId: 'm1' });
   });
 
@@ -58,7 +58,7 @@ describe('MetaWebhookService.handleEntries', () => {
         ],
       },
     ]);
-    const create = prisma.message.create.mock.calls[0][0].data;
+    const create = prisma.message.upsert.mock.calls[0][0].create;
     expect(create.attachments).toMatchObject({ images: ['https://x/y.jpg'] });
     expect(create.content).toContain('image');
   });
@@ -78,6 +78,6 @@ describe('MetaWebhookService.handleEntries', () => {
         ],
       },
     ]);
-    expect(prisma.message.create).not.toHaveBeenCalled();
+    expect(prisma.message.upsert).not.toHaveBeenCalled();
   });
 });

@@ -24,12 +24,7 @@ export class AnalyticsService {
     const to = new Date();
     const from = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-    const [
-      convCounts,
-      messageCounts,
-      orderAgg,
-      runAgg,
-    ] = await Promise.all([
+    const [convCounts, messageCounts, orderAgg, runAgg] = await Promise.all([
       this.prisma.conversation.groupBy({
         by: ['status'],
         where: { organizationId, createdAt: { gte: from } },
@@ -41,7 +36,11 @@ export class AnalyticsService {
         _count: { _all: true },
       }),
       this.prisma.order.aggregate({
-        where: { organizationId, createdAt: { gte: from }, status: { in: ['created', 'confirmed'] } },
+        where: {
+          organizationId,
+          createdAt: { gte: from },
+          status: { in: ['created', 'confirmed'] },
+        },
         _count: { _all: true },
         _sum: { total: true },
       }),
@@ -53,8 +52,7 @@ export class AnalyticsService {
       }),
     ]);
 
-    const byStatus = (s: string) =>
-      convCounts.find((r) => r.status === s)?._count._all ?? 0;
+    const byStatus = (s: string) => convCounts.find((r) => r.status === s)?._count._all ?? 0;
     const byDirection = (d: string) =>
       messageCounts.find((r) => r.direction === d)?._count._all ?? 0;
 

@@ -3,13 +3,18 @@ import { APP_GUARD, Reflector } from '@nestjs/core';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { SessionService } from './session.service';
+import { AccountRecoveryController } from './account-recovery.controller';
+import { AccountRecoveryService } from './account-recovery.service';
+import { MailService } from './mail.service';
 import { AuthGuard } from './auth.guard';
 
 @Global()
 @Module({
-  controllers: [AuthController],
+  controllers: [AuthController, AccountRecoveryController],
   providers: [
     AuthService,
+    AccountRecoveryService,
+    MailService,
     SessionService,
     Reflector,
     AuthGuard,

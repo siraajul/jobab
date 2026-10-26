@@ -22,9 +22,17 @@ export interface MetaMessagingEvent {
 
 /** "feed" change item — comments, post status, etc. We handle comments only. */
 export interface MetaFeedChangeValue {
-  item: 'comment' | 'post' | 'status' | string;
+  metadata?: { phone_number_id?: string };
+  messages?: Array<{
+    id: string;
+    from: string;
+    timestamp: string;
+    type: string;
+    text?: { body?: string };
+  }>;
+  item?: 'comment' | 'post' | 'status' | string;
   /** Verb describes the action; we react to 'add' for new comments. */
-  verb: 'add' | 'edit' | 'remove' | string;
+  verb?: 'add' | 'edit' | 'remove' | string;
   comment_id?: string;
   post_id?: string;
   parent_id?: string;

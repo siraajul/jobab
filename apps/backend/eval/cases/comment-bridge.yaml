@@ -7,13 +7,15 @@ merchant_setup:
       price: 1650
       variants: [{ name: Medium · Red, stock: 5 }]
 conversation:
-  - { role: customer, text: "[from comment on post post_eid, intent=price]\nApa ei lal jamdani shari ta dam koto?" }
+  - {
+      role: customer,
+      text: "[from comment on post post_eid, intent=price]\nApa ei lal jamdani shari ta dam koto?",
+    }
 expectations:
   - { kind: tool_called, tool: search_catalog }
-  - { kind: reply_contains, all: ["1650"] }
+  - { kind: reply_contains, all: ['1650'] }
 
 ---
-
 id: comment-bridge-buy
 description: Comment-to-DM with intent=buy — agent should be ready to take an order
 merchant_setup:
@@ -23,6 +25,9 @@ merchant_setup:
       price: 1650
       variants: [{ name: Medium · Red, stock: 5 }]
 conversation:
-  - { role: customer, text: "[from comment on post post_eid, intent=buy]\namar nibo lal jamdani shari medium" }
+  - {
+      role: customer,
+      text: "[from comment on post post_eid, intent=buy]\namar nibo lal jamdani shari medium",
+    }
 expectations:
   - { kind: tool_called, tool: search_catalog }

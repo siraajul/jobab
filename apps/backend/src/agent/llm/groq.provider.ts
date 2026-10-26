@@ -45,6 +45,8 @@ export class GroqProvider implements LlmProvider {
     this.client = new OpenAI({
       apiKey,
       baseURL: 'https://api.groq.com/openai/v1',
+      timeout: this.config.get<number>('PROVIDER_TIMEOUT_MS') ?? 15000,
+      maxRetries: 1,
     });
     return this.client;
   }

@@ -1,5 +1,6 @@
-import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
-import { Direction, Sender } from '@prisma/client';
+import { createHash } from 'node:crypto';
+import { Inject, Injectable, Logger, Optional, NotFoundException } from '@nestjs/common';
+import { Direction, Sender, type Platform } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AgentQueueService } from '../queue/agent-queue.service';
 import { CommentsService } from '../comments/comments.service';
@@ -24,43 +25,108 @@ export class MetaWebhookService {
   async scrubExternalUser(externalUserId: string): Promise<void> {
     if (!externalUserId || externalUserId === 'unknown') return;
     const convs = await this.prisma.conversation.findMany({
-      where: { externalUserId },
+      where: { OR: [{ externalUserId }, { page: { connectedFacebookUserId: externalUserId } }] },
       select: { id: true },
     });
-    if (convs.length === 0) return;
+    if (convs.length === 0) {
+      await this.prisma.page.updateMany({
+        where: { connectedFacebookUserId: externalUserId },
+        data: { accessToken: '', status: 'disconnected', connectedFacebookUserId: null },
+      });
+      return;
+    }
     const ids = convs.map((c) => c.id);
-    await this.prisma.order.updateMany({
-      where: { conversationId: { in: ids } },
-      data: {
-        customerName: '[deleted]',
-        customerPhone: '[deleted]',
-        customerAddress: '[deleted]',
-      },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.order.updateMany({
+        where: { conversationId: { in: ids } },
+        data: {
+          customerName: '[deleted]',
+          customerPhone: '[deleted]',
+          customerAddress: '[deleted]',
+        },
+      });
+      await tx.page.updateMany({
+        where: { connectedFacebookUserId: externalUserId },
+        data: { accessToken: '', status: 'disconnected', connectedFacebookUserId: null },
+      });
+      await tx.agentRun.deleteMany({ where: { conversationId: { in: ids } } });
+      await tx.message.deleteMany({ where: { conversationId: { in: ids } } });
+      await tx.note.deleteMany({ where: { conversationId: { in: ids } } });
+      await tx.comment.deleteMany({ where: { commenterExternalId: externalUserId } });
+      for (const id of ids)
+        await tx.conversation.update({
+          where: { id },
+          data: {
+            externalUserId: `deleted_${id}`,
+            customerName: null,
+            customerPhone: null,
+            customerAddress: null,
+            lastCustomerMessageAt: null,
+            assignedUserId: null,
+            handoffReason: null,
+            handoffCategory: null,
+            status: 'closed',
+            automationVersion: { increment: 1 },
+          },
+        });
     });
-    await this.prisma.conversation.deleteMany({ where: { id: { in: ids } } });
-    this.log.log(`scrubbed ${ids.length} conversation(s) for external user ${externalUserId}`);
+    this.log.log(`scrubbed ${ids.length} customer conversation(s)`);
   }
 
-  async handleEntries(entries: MetaEntry[]): Promise<void> {
+  async recordDeletion(code: string) {
+    await this.prisma.deletionReceipt.create({ data: { code } });
+  }
+
+  async deletionStatus(code: string) {
+    const receipt = await this.prisma.deletionReceipt.findUnique({ where: { code } });
+    if (!receipt) throw new NotFoundException('Deletion receipt not found');
+    return { status: 'completed', completedAt: receipt.completedAt };
+  }
+
+  async handleEntries(entries: MetaEntry[], platform: Platform = 'facebook'): Promise<void> {
     for (const entry of entries) {
       // Messenger DMs
       for (const event of entry.messaging ?? []) {
         if (event.message?.is_echo) continue;
         try {
-          await this.handleMessagingEvent(entry.id, event);
+          await this.handleMessagingEvent(entry.id, event, platform);
         } catch (err) {
-          this.log.error(`failed to handle messaging event from page=${entry.id}`, err as Error);
+          this.log.error(`message ingestion failed for page=${entry.id}`);
+          throw err;
         }
       }
 
       // Page feed (comments)
       for (const change of entry.changes ?? []) {
+        if (change.field === 'messages' && change.value.metadata?.phone_number_id) {
+          for (const message of change.value.messages ?? []) {
+            const supported = message.type === 'text';
+            await this.handleMessagingEvent(
+              change.value.metadata.phone_number_id,
+              {
+                sender: { id: message.from },
+                recipient: { id: change.value.metadata.phone_number_id },
+                timestamp: Number(message.timestamp) * 1000,
+                message: {
+                  mid: message.id,
+                  text: supported
+                    ? (message.text?.body ?? '')
+                    : `[Unsupported WhatsApp ${message.type}; merchant review required]`,
+                },
+              },
+              'whatsapp',
+              !supported,
+            );
+          }
+          continue;
+        }
         if (change.field !== 'feed') continue;
         if (change.value.item !== 'comment' || change.value.verb !== 'add') continue;
         try {
           await this.handleCommentEvent(entry.id, change.value);
         } catch (err) {
-          this.log.error(`failed to handle comment from page=${entry.id}`, err as Error);
+          this.log.error(`comment ingestion failed for page=${entry.id}`);
+          throw err;
         }
       }
     }
@@ -75,15 +141,18 @@ export class MetaWebhookService {
       postId: value.post_id,
       commenter: { id: value.from.id, name: value.from.name },
       text: value.message,
-      createdAt: value.created_time
-        ? new Date(value.created_time * 1000)
-        : new Date(),
+      createdAt: value.created_time ? new Date(value.created_time * 1000) : new Date(),
     });
   }
 
-  private async handleMessagingEvent(externalPageId: string, event: MetaMessagingEvent) {
+  private async handleMessagingEvent(
+    externalPageId: string,
+    event: MetaMessagingEvent,
+    platform: Platform,
+    needsHuman = false,
+  ) {
     const page = await this.prisma.page.findFirst({
-      where: { externalPageId, platform: 'facebook' },
+      where: { externalPageId, platform },
     });
     if (!page) {
       this.log.warn(`webhook for unknown page ${externalPageId}`);
@@ -108,9 +177,8 @@ export class MetaWebhookService {
       (imageUrls.length > 0
         ? `[customer sent ${imageUrls.length} image${imageUrls.length === 1 ? '' : 's'}]`
         : '');
-    const attachments = imageUrls.length > 0
-      ? { images: imageUrls, raw: rawAttachments }
-      : rawAttachments;
+    const attachments =
+      imageUrls.length > 0 ? { images: imageUrls, raw: rawAttachments } : rawAttachments;
 
     // Find-or-create the conversation, scoped by (page, customer).
     const conversation = await this.prisma.conversation.upsert({
@@ -124,9 +192,15 @@ export class MetaWebhookService {
       },
     });
 
-    const message = await this.prisma.message.create({
-      data: {
+    const externalMessageId = createHash('sha256')
+      .update(`${platform}:${externalPageId}:${event.message?.mid ?? JSON.stringify(event)}`)
+      .digest('hex');
+    const message = await this.prisma.message.upsert({
+      where: { externalMessageId },
+      update: {},
+      create: {
         conversationId: conversation.id,
+        externalMessageId,
         direction: Direction.in,
         sender: Sender.customer,
         content: text,
@@ -135,6 +209,18 @@ export class MetaWebhookService {
       },
     });
 
+    if (needsHuman) {
+      await this.prisma.conversation.update({
+        where: { id: conversation.id },
+        data: {
+          status: 'needs_human',
+          handoffCategory: 'other',
+          handoffReason: 'Unsupported WhatsApp media; review the original channel',
+          automationVersion: { increment: 1 },
+        },
+      });
+      return;
+    }
     // Hand off to the agent worker. If the human has taken over, the worker
     // will detect status=human and no-op.
     await this.queue.enqueue({ conversationId: conversation.id, messageId: message.id });

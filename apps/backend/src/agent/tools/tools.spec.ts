@@ -10,8 +10,14 @@ function ctx(over: Partial<ToolContext> = {}): ToolContext {
     organizationId: 'org1',
     conversationId: 'c1',
     prisma: {} as never,
-    catalog: { search: jest.fn(async () => [{ product_id: 'p', title: 't', price: 1, currency: 'BDT', variants: [] }]) } as never,
-    guardrail: { tryCreate: jest.fn(async () => ({ ok: true, order_id: 'o1', total: 100, currency: 'BDT' })) } as never,
+    catalog: {
+      search: jest.fn(async () => [
+        { product_id: 'p', title: 't', price: 1, currency: 'BDT', variants: [] },
+      ]),
+    } as never,
+    guardrail: {
+      tryCreate: jest.fn(async () => ({ ok: true, order_id: 'o1', total: 100, currency: 'BDT' })),
+    } as never,
     vision: {} as never,
     embeddings: { available: false } as never,
     whatsapp: { notifyOrg: jest.fn(async () => undefined) } as never,
@@ -62,7 +68,7 @@ describe('save_customer_detail tool', () => {
         findMany: async () => texts.map((t) => ({ content: t })),
       },
       conversation: { update: jest.fn(async () => baseConv) },
-    } as never);
+    }) as never;
 
   it('blocks ungrounded values', async () => {
     const prisma = messages(['just chatting about weather']);
@@ -126,10 +132,7 @@ describe('handoff_to_human tool', () => {
 describe('create_order tool', () => {
   it('delegates to guardrail', async () => {
     const c = ctx();
-    await createOrderTool.execute(
-      { items: [{ product_id: 'p', variant_id: 'v', qty: 1 }] },
-      c,
-    );
+    await createOrderTool.execute({ items: [{ product_id: 'p', variant_id: 'v', qty: 1 }] }, c);
     expect(c.guardrail.tryCreate).toHaveBeenCalledWith({
       organizationId: 'org1',
       conversationId: 'c1',

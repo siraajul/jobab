@@ -39,7 +39,9 @@ function parse(args: string[]): Args {
   }
 
   if (free.length === 0 && imageUrls.length === 0) {
-    console.error('Usage: npm run send -- [--customer <id>] [--page <id>] [--image <url>]* "<message text>"');
+    console.error(
+      'Usage: npm run send -- [--customer <id>] [--page <id>] [--image <url>]* "<message text>"',
+    );
     exit(1);
   }
 

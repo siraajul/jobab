@@ -13,8 +13,7 @@ function makePrisma(opts: {
             (where.id ? where.id === m.id : true) &&
             (where.userId ? where.userId === m.userId : true),
         ) ?? null,
-      count: async ({ where }: any) =>
-        opts.members.filter((m) => m.role === where.role).length,
+      count: async ({ where }: any) => opts.members.filter((m) => m.role === where.role).length,
       delete: jest.fn(async () => undefined),
     },
     invite: {
@@ -24,7 +23,9 @@ function makePrisma(opts: {
     },
     conversation: {
       findFirst: async ({ where }: any) =>
-        opts.conversations?.find((c) => c.id === where.id && c.organizationId === where.organizationId) ?? null,
+        opts.conversations?.find(
+          (c) => c.id === where.id && c.organizationId === where.organizationId,
+        ) ?? null,
       update: async ({ data }: any) => ({ id: 'c1', ...data }),
     },
     auditEvent: {
@@ -80,11 +81,9 @@ describe('TeamService', () => {
     });
     // The Test for "owners cannot be removed" needs membership.user; fake it.
     prisma.membership.findFirst = async () =>
-      ({ id: 'm1', userId: 'u1', role: 'owner', user: { email: 'a@b.c' } } as any);
+      ({ id: 'm1', userId: 'u1', role: 'owner', user: { email: 'a@b.c' } }) as any;
     const svc = new TeamService(prisma, fakeSession, fakeAuth);
-    await expect(svc.removeMember('org1', 'u1', 'owner', 'm1')).rejects.toThrow(
-      /last owner/,
-    );
+    await expect(svc.removeMember('org1', 'u1', 'owner', 'm1')).rejects.toThrow(/last owner/);
   });
 
   it('assigns a conversation to a member and logs', async () => {

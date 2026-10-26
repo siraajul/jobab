@@ -2,7 +2,7 @@ import { Body, Controller, Get, Post, Query, Res } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { ConnectFacebookPagesBodySchema, ConnectPageBodySchema } from '@jobab/shared';
-import { OrgId, Public } from '../auth/auth.guard';
+import { OrgId, Public, Roles } from '../auth/auth.guard';
 import { EnvService } from '../config/env.service';
 import {
   ApiAuthCookie,
@@ -18,6 +18,7 @@ import { OnboardingService } from './onboarding.service';
 @ApiTags('onboarding')
 @ApiAuthCookie()
 @ApiAuthErrors()
+@Roles('owner', 'admin')
 @Controller('onboarding')
 export class OnboardingController {
   constructor(

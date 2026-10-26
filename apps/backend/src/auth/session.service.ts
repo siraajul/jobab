@@ -15,6 +15,7 @@ export interface SessionPayload {
   uid: string;
   iat: number;
   exp: number;
+  version?: number;
 }
 
 const TTL_SECONDS = 60 * 60 * 24 * 14; // 14 days
@@ -27,12 +28,14 @@ export class SessionService {
   constructor(env: EnvService) {
     // Use the encryption key directly — its at-least-32-char invariant is
     // already enforced. Use a domain separator to keep it logically distinct.
-    this.secret = createHmac('sha256', env.get('ENCRYPTION_KEY')).update('jobab.session.v1').digest();
+    this.secret = createHmac('sha256', env.get('ENCRYPTION_KEY'))
+      .update('jobab.session.v1')
+      .digest();
   }
 
-  sign(userId: string): { value: string; maxAge: number } {
+  sign(userId: string, version = 0): { value: string; maxAge: number } {
     const now = Math.floor(Date.now() / 1000);
-    const payload: SessionPayload = { uid: userId, iat: now, exp: now + TTL_SECONDS };
+    const payload: SessionPayload = { uid: userId, iat: now, exp: now + TTL_SECONDS, version };
     const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
     const sig = createHmac('sha256', this.secret).update(payloadB64).digest('base64url');
     return { value: `${payloadB64}.${sig}`, maxAge: TTL_SECONDS };
@@ -40,11 +43,15 @@ export class SessionService {
 
   verify(cookieValue: string | undefined): SessionPayload | null {
     if (!cookieValue) return null;
-    const [payloadB64, sig] = cookieValue.split('.');
+    const parts = cookieValue.split('.');
+    if (parts.length !== 2) return null;
+    const [payloadB64, sig] = parts;
     if (!payloadB64 || !sig) return null;
     const expected = createHmac('sha256', this.secret).update(payloadB64).digest('base64url');
-    if (expected.length !== sig.length) return null;
-    if (!timingSafeEqual(Buffer.from(expected), Buffer.from(sig))) return null;
+    const provided = Buffer.from(sig);
+    const expectedBytes = Buffer.from(expected);
+    if (expectedBytes.length !== provided.length) return null;
+    if (!timingSafeEqual(expectedBytes, provided)) return null;
     let payload: SessionPayload;
     try {
       payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8')) as SessionPayload;
@@ -52,7 +59,12 @@ export class SessionService {
       return null;
     }
     if (typeof payload.uid !== 'string' || typeof payload.exp !== 'number') return null;
-    if (payload.exp < Math.floor(Date.now() / 1000)) return null;
+    if (
+      payload.version !== undefined &&
+      (!Number.isSafeInteger(payload.version) || payload.version < 0)
+    )
+      return null;
+    if (payload.exp <= Math.floor(Date.now() / 1000)) return null;
     return payload;
   }
 

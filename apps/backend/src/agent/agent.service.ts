@@ -1,3 +1,4 @@
+import { AgentRuntimeService } from './agent-runtime.service';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { EnvService } from '../config/env.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -33,6 +34,7 @@ export class AgentService {
     private readonly env: EnvService,
     private readonly trace: LangfuseService,
     private readonly whatsapp: WhatsAppService,
+    private readonly runtime: AgentRuntimeService,
   ) {}
 
   async handleMessage(conversationId: string, messageId: string): Promise<void> {
@@ -44,6 +46,18 @@ export class AgentService {
 
     // Bail if the merchant has taken over.
     if (conversation.status === 'human' || conversation.status === 'closed') return;
+    const previousReply = await this.prisma.message.findUnique({
+      where: { replyToMessageId: messageId },
+    });
+    if (previousReply) {
+      await this.messenger.sendText(
+        conversationId,
+        previousReply.content,
+        previousReply.attachments as Record<string, unknown> | undefined,
+        { replyToMessageId: messageId, automationVersion: conversation.automationVersion },
+      );
+      return;
+    }
 
     const history = await this.prisma.message.findMany({
       where: { conversationId },
@@ -89,6 +103,7 @@ export class AgentService {
     const ctx: ToolContext = {
       organizationId: conversation.organizationId,
       conversationId: conversation.id,
+      automationVersion: conversation.automationVersion,
       prisma: this.prisma,
       catalog: this.catalog,
       guardrail: this.guardrail,
@@ -122,6 +137,13 @@ export class AgentService {
 
     try {
       for (let iter = 0; iter < maxIters; iter++) {
+        if (!(await this.isCurrent(conversationId, conversation.automationVersion))) return;
+        // UTF-8 bytes conservatively bound text tokenization; reserve tool/schema overhead too.
+        const reservation =
+          Buffer.byteLength(JSON.stringify({ messages, tools: TOOLS.map((t) => t.definition) })) +
+          maxOutputTokens +
+          4096;
+        await this.runtime.reserveTokens(conversation.organizationId, reservation);
         const result = await provider.call({
           model,
           messages,
@@ -156,6 +178,7 @@ export class AgentService {
           toolCalls: result.toolCalls,
         });
         for (const call of result.toolCalls) {
+          if (!(await this.isCurrent(conversationId, conversation.automationVersion))) return;
           const out = await this.executeToolCall(call, ctx);
           this.trace.logToolCall(traceCtx, { name: call.name, input: call.arguments, output: out });
           toolCallLog.push({ name: call.name, arguments: call.arguments, result: out });
@@ -217,11 +240,23 @@ export class AgentService {
           };
         }
       }
-      await this.messenger.sendText(conversationId, finalText, outAttachments);
+      if (!(await this.isCurrent(conversationId, conversation.automationVersion))) return;
+      await this.messenger.sendText(conversationId, finalText, outAttachments, {
+        replyToMessageId: messageId,
+        automationVersion: conversation.automationVersion,
+      });
     } else if (loopError) {
       // Throwing makes BullMQ retry per the backoff config.
       throw new Error(loopError);
     }
+  }
+
+  private async isCurrent(id: string, version: number): Promise<boolean> {
+    const current = await this.prisma.conversation.findUnique({
+      where: { id },
+      select: { status: true, automationVersion: true },
+    });
+    return !!current && current.status === 'bot' && current.automationVersion === version;
   }
 
   private async executeToolCall(call: LlmToolCall, ctx: ToolContext): Promise<unknown> {

@@ -23,11 +23,7 @@ export class TagsService {
     });
   }
 
-  async update(
-    organizationId: string,
-    id: string,
-    patch: { name?: string; color?: string },
-  ) {
+  async update(organizationId: string, id: string, patch: { name?: string; color?: string }) {
     const tag = await this.prisma.tag.findFirst({ where: { id, organizationId } });
     if (!tag) throw new NotFoundException('tag not found');
     if (patch.name && patch.name.toLowerCase() !== tag.name.toLowerCase()) {

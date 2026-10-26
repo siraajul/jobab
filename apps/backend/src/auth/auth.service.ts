@@ -56,7 +56,7 @@ export class AuthService {
     if (!user || !user.passwordHash) throw new UnauthorizedException('invalid credentials');
     const ok = await this.verifyPassword(password, user.passwordHash);
     if (!ok) throw new UnauthorizedException('invalid credentials');
-    const cookie = this.session.sign(user.id);
+    const cookie = this.session.sign(user.id, user.sessionVersion);
     return {
       user: this.toAuthContext(user),
       cookie,
@@ -70,7 +70,7 @@ export class AuthService {
       where: { id: payload.uid },
       include: { memberships: { include: { organization: { select: { id: true } } } } },
     });
-    if (!user) return null;
+    if (!user || user.sessionVersion !== (payload.version ?? 0)) return null;
     return this.toAuthContext(user);
   }
 
@@ -117,7 +117,7 @@ export class AuthService {
       return { user, org, membership };
     });
 
-    const cookie = this.session.sign(result.user.id);
+    const cookie = this.session.sign(result.user.id, result.user.sessionVersion);
     return {
       user: {
         userId: result.user.id,
@@ -176,10 +176,22 @@ export class AuthService {
       const existing = await tx.user.findUnique({
         where: { email: invite.email.toLowerCase() },
       });
+      if (
+        existing &&
+        (!existing.passwordHash ||
+          !(await this.verifyPassword(input.password, existing.passwordHash)))
+      ) {
+        throw new UnauthorizedException('use your existing account password to accept this invite');
+      }
+      const claimed = await tx.invite.updateMany({
+        where: { id: invite.id, acceptedAt: null, expiresAt: { gt: new Date() } },
+        data: { acceptedAt: new Date() },
+      });
+      if (claimed.count !== 1) throw new BadRequestException('invite invalid or expired');
       const u = existing
         ? await tx.user.update({
             where: { id: existing.id },
-            data: { name: input.name, passwordHash },
+            data: { name: input.name },
           })
         : await tx.user.create({
             data: { email: invite.email.toLowerCase(), name: input.name, passwordHash },
@@ -210,7 +222,7 @@ export class AuthService {
 
     return {
       organizationId: invite.organizationId,
-      cookie: this.session.sign(user.id),
+      cookie: this.session.sign(user.id, user.sessionVersion),
     };
   }
 

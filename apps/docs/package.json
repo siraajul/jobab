@@ -2,7 +2,7 @@
   "name": "@jobab/docs",
   "version": "0.1.0",
   "private": true,
-  "description": "Jobab documentation site — VitePress wrapper around the markdown in /docs.",
+  "description": "Jobab documentation site \u2014 VitePress wrapper around the markdown in /docs.",
   "scripts": {
     "dev": "vitepress dev",
     "build": "vitepress build",
@@ -10,6 +10,6 @@
   },
   "devDependencies": {
     "vitepress": "^1.5.0",
-    "vue": "^3.5.0"
+    "vue": "^3.5.44"
   }
 }

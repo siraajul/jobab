@@ -22,6 +22,7 @@ export const MessageSchema = z.object({
   direction: MessageDirectionSchema,
   sender: MessageSenderSchema,
   content: z.string(),
+  deliveryStatus: z.string().optional(),
   attachments: MessageAttachmentsSchema.nullable().optional(),
   createdAt: z.string(),
 });

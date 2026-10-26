@@ -113,7 +113,9 @@ interface CaseResult {
 const log = new Logger('eval');
 
 async function loadCases(): Promise<EvalCase[]> {
-  const args = argv.slice(2).filter((a) => !a.startsWith('--'));
+  const args = argv
+    .slice(2)
+    .filter((a, index, all) => !a.startsWith('--') && all[index - 1] !== '--json');
   const files: string[] = [];
   if (args.length > 0) {
     files.push(...args.map((a) => resolve(a)));
@@ -146,7 +148,7 @@ async function seedFixture(prisma: PrismaService, c: EvalCase) {
       catalogSource: 'csv',
       aiInstructions:
         c.merchant_setup.ai_instructions ??
-        'You are the merchant. Reply in the customer\'s language. Use search_catalog before quoting any price.',
+        "You are the merchant. Reply in the customer's language. Use search_catalog before quoting any price.",
     },
   });
   await prisma.page.upsert({
@@ -303,7 +305,10 @@ async function checkExpectation(
     case 'reply_contains': {
       const lower = ctx.finalReply.toLowerCase();
       const missing = exp.all.filter((s) => !lower.includes(s.toLowerCase()));
-      return [missing.length === 0, `reply_contains(all=[${exp.all.join(', ')}]) — missing: [${missing.join(', ')}]`];
+      return [
+        missing.length === 0,
+        `reply_contains(all=[${exp.all.join(', ')}]) — missing: [${missing.join(', ')}]`,
+      ];
     }
     case 'reply_excludes': {
       const lower = ctx.finalReply.toLowerCase();
@@ -317,7 +322,10 @@ async function checkExpectation(
       });
       if (!order) return [false, 'order_created — no order in DB'];
       if (exp.required_total && Number(order.total) !== exp.required_total) {
-        return [false, `order_created — total mismatch (expected ${exp.required_total}, got ${order.total})`];
+        return [
+          false,
+          `order_created — total mismatch (expected ${exp.required_total}, got ${order.total})`,
+        ];
       }
       return [true, 'order_created'];
     }
@@ -352,9 +360,7 @@ async function cleanup(prisma: PrismaService, c: EvalCase) {
 }
 
 async function main() {
-  const jsonOut = argv.includes('--json')
-    ? argv[argv.indexOf('--json') + 1]
-    : null;
+  const jsonOut = argv.includes('--json') ? argv[argv.indexOf('--json') + 1] : null;
 
   const cases = await loadCases();
   if (cases.length === 0) {
@@ -362,20 +368,27 @@ async function main() {
     exit(1);
   }
 
-  const app = await NestFactory.createApplicationContext(EvalModule, { abortOnError: false, logger: false });
+  const app = await NestFactory.createApplicationContext(EvalModule, {
+    abortOnError: false,
+    logger: false,
+  });
   const agent = app.get(AgentService);
   const prisma = app.get(PrismaService);
 
   const results: CaseResult[] = [];
+  let executionErrors = 0;
   for (const c of cases) {
     stdout.write(`  · ${c.id.padEnd(28)} `);
     try {
       const r = await runCase(agent, prisma, c);
       results.push(r);
       const pct = ((r.passed / r.totalChecks) * 100).toFixed(0);
-      stdout.write(`${r.passed}/${r.totalChecks} (${pct}%)  ${(r.latencyMs / 1000).toFixed(1)}s  $${r.costUsd.toFixed(5)}\n`);
+      stdout.write(
+        `${r.passed}/${r.totalChecks} (${pct}%)  ${(r.latencyMs / 1000).toFixed(1)}s  $${r.costUsd.toFixed(5)}\n`,
+      );
       for (const f of r.failed) stdout.write(`        ✗ ${f}\n`);
     } catch (err) {
+      executionErrors++;
       stdout.write(`ERROR ${(err as Error).message}\n`);
     } finally {
       await cleanup(prisma, c);
@@ -405,7 +418,16 @@ async function main() {
 
   await app.close();
   // Non-zero exit if score under threshold so CI can gate
-  exit(score < 70 ? 1 : 0);
+  const threshold = Number(process.env.EVAL_MIN_SCORE ?? 95);
+  exit(
+    !Number.isFinite(threshold) ||
+      executionErrors > 0 ||
+      results.some((result) => result.error) ||
+      results.length !== cases.length ||
+      score < threshold
+      ? 1
+      : 0,
+  );
 }
 
 main().catch((err) => {

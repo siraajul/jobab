@@ -2,11 +2,33 @@ packages:
   - apps/*
   - packages/*
 
-# Pin react types across the monorepo so mobile (react 18.2) and web (react
-# 18.3) share one @types/react and the type-only React.ReactNode union stays
-# coherent.
+# Next's declarations import React types but do not declare the peer. Bind them
+# to the web app's React 19 types instead of the Expo app's hoisted React 18 types.
+packageExtensions:
+  'next@16':
+    peerDependencies:
+      '@types/react': ^19.3.0
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+
+# React types are local to each app: React 19 for web and Expo-compatible React 18 for mobile.
 overrides:
-  '@types/react': 18.3.3
+  'undici@^6': ^6.29.1
+  'fast-uri@^3': ^3.1.9
+  multer: ^2.5.0
+  js-yaml: ^4.3.2
+  lodash: ^4.18.1
+  postcss: ^8.5.23
+  'nanoid@^3': ^3.3.18
+  qs: ^6.16.0
+  form-data: ^4.0.6
+  browserslist: ^4.28.7
+  baseline-browser-mapping: ^2.11.0
+  source-map-js: ^1.2.2
+  proxy-addr: ^2.0.8
+  'body-parser@^1': ^1.20.9
+  'fast-copy@^3': ^3.1.0
   # Expo SDK 51 requires metro@0.80.x. Without these overrides, nativewind@4.2.4
   # pulls metro@0.84.4, pnpm hoists it, and Expo's CLI dies with
   # ERR_PACKAGE_PATH_NOT_EXPORTED on metro-cache/src/stores/FileStore.
@@ -38,3 +60,12 @@ allowBuilds:
 # tell pnpm to ignore the build script silently instead of erroring.
 ignoredBuiltDependencies:
   - msw
+
+minimumReleaseAgeExclude:
+  - '@pnpm/exe@10.34.9'
+  - '@pnpm/linux-arm64@10.34.9'
+  - '@pnpm/linux-x64@10.34.9'
+  - '@pnpm/macos-arm64@10.34.9'
+  - '@pnpm/macos-x64@10.34.9'
+  - '@pnpm/win-arm64@10.34.9'
+  - '@pnpm/win-x64@10.34.9'

@@ -16,6 +16,8 @@ import { OpenAPIRegistry, extendZodWithOpenApi } from '@asteasolutions/zod-to-op
 import { z } from 'zod';
 import {
   // auth
+  ForgotPasswordBodySchema,
+  ResetPasswordBodySchema,
   LoginBodySchema,
   SignUpBodySchema,
   AcceptInviteBodySchema,
@@ -39,6 +41,7 @@ import {
   OrderListItemSchema,
   SetOrderStatusBodySchema,
   // products
+  ReindexCatalogBodySchema,
   ProductSchema,
   ProductVariantSchema,
   CsvSyncBodySchema,
@@ -75,6 +78,8 @@ function reg<T extends z.ZodTypeAny>(name: string, schema: T, description?: stri
 // ---------------------------------------------------------------------------
 // Auth
 // ---------------------------------------------------------------------------
+reg('ForgotPasswordBody', ForgotPasswordBodySchema);
+reg('ResetPasswordBody', ResetPasswordBodySchema);
 reg('LoginBody', LoginBodySchema, 'Email + password to start a session.');
 reg(
   'SignUpBody',
@@ -133,6 +138,7 @@ reg('SetOrderStatusBody', SetOrderStatusBodySchema, 'Move an order through its l
 // ---------------------------------------------------------------------------
 // Catalog · products
 // ---------------------------------------------------------------------------
+reg('ReindexCatalogBody', ReindexCatalogBodySchema);
 reg('Product', ProductSchema, 'A product with one or more variants.');
 reg(
   'ProductVariant',

@@ -2,10 +2,10 @@
   "name": "jobab",
   "version": "0.1.0",
   "private": true,
-  "description": "Jobab — AI sales agent for Bangladeshi social-commerce merchants. Monorepo: backend (NestJS), web (Next.js), shared types.",
+  "description": "Jobab \u2014 AI sales agent for Bangladeshi social-commerce merchants. Monorepo: backend (NestJS), web (Next.js), shared types.",
   "engines": {
-    "node": ">=20",
-    "pnpm": ">=9"
+    "node": ">=22",
+    "pnpm": ">=10.34.9"
   },
   "scripts": {
     "build": "pnpm -r --filter=./apps/* --filter=./packages/* build",
@@ -13,8 +13,8 @@
     "test": "pnpm -r --filter=./apps/* test",
     "lint": "pnpm -r --filter=./apps/* --filter=./packages/* lint && pnpm format:check",
     "typecheck": "pnpm -r --filter=./apps/* --filter=./packages/* typecheck",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,md,json,yaml,yml,css}\" --ignore-path .gitignore",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,md,json,yaml,yml,css}\" --ignore-path .gitignore",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,md,json,yaml,yml,css}\" --ignore-path .gitignore --ignore-path .prettierignore",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,md,json,yaml,yml,css}\" --ignore-path .gitignore --ignore-path .prettierignore",
     "up": "bash scripts/up.sh",
     "infra:up": "docker compose up -d",
     "infra:down": "docker compose down",
@@ -23,15 +23,17 @@
     "docs:dev": "pnpm --filter @jobab/docs dev",
     "docs:build": "pnpm --filter @jobab/docs build",
     "docs:preview": "pnpm --filter @jobab/docs preview",
-    "prepare": "simple-git-hooks || true"
+    "prepare": "simple-git-hooks || true",
+    "security:audit": "node scripts/check-production-audit.mjs",
+    "verify:readiness": "node scripts/verify-readiness.mjs"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "eslint": "^8.57.1",
     "lint-staged": "^15.5.2",
-    "prettier": "^3.8.3",
-    "simple-git-hooks": "^2.13.1",
+    "prettier": "^3.9.10",
+    "simple-git-hooks": "^2.14.0",
     "typescript": "^5.9.3"
   },
   "simple-git-hooks": {
@@ -40,11 +42,12 @@
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,json,md,yaml,yml,css}": "prettier --write",
-    "*.{ts,tsx}": "eslint --fix"
+    "*.{ts,tsx}": "node scripts/lint-staged.mjs"
   },
   "commitlint": {
     "extends": [
       "@commitlint/config-conventional"
     ]
-  }
+  },
+  "packageManager": "pnpm@10.34.9"
 }

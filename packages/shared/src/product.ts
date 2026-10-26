@@ -45,3 +45,8 @@ export const SetVariantStockBodySchema = z.object({
   stockQty: z.number().int().min(0).max(1_000_000),
 });
 export type SetVariantStockBody = z.infer<typeof SetVariantStockBodySchema>;
+
+export const ReindexCatalogBodySchema = z.object({
+  cursor: z.string().optional(),
+  limit: z.number().int().min(1).max(20).default(10),
+});

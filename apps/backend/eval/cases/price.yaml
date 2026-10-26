@@ -10,15 +10,14 @@ merchant_setup:
         - { name: Medium · Red, stock: 5 }
         - { name: Large · Red, stock: 2 }
 conversation:
-  - { role: customer, text: "lal jamdani shari koto?" }
+  - { role: customer, text: 'lal jamdani shari koto?' }
 expectations:
   - { kind: tool_called, tool: search_catalog }
-  - { kind: reply_contains, all: ["1650"] }
-  - { kind: reply_excludes, any: ["[stub", "i don't know", "i'm not sure"] }
+  - { kind: reply_contains, all: ['1650'] }
+  - { kind: reply_excludes, any: ['[stub', "i don't know", "i'm not sure"] }
   - { kind: language, must_be_one_of: [bangla, banglish] }
 
 ---
-
 id: price-002
 description: Bangla price ask — দাম কত
 merchant_setup:
@@ -29,14 +28,13 @@ merchant_setup:
       variants:
         - { name: Large · Teal, stock: 3 }
 conversation:
-  - { role: customer, text: "এই কারচুপি থ্রি-পিসের দাম কত?" }
+  - { role: customer, text: 'এই কারচুপি থ্রি-পিসের দাম কত?' }
 expectations:
   - { kind: tool_called, tool: search_catalog }
-  - { kind: reply_contains, all: ["1850"] }
+  - { kind: reply_contains, all: ['1850'] }
   - { kind: language, must_be_one_of: [bangla, banglish] }
 
 ---
-
 id: price-003
 description: Mixed Bangla + English price ask with size mention
 merchant_setup:
@@ -47,7 +45,7 @@ merchant_setup:
       variants:
         - { name: Medium · Mustard, stock: 8 }
 conversation:
-  - { role: customer, text: "apa medium cotton kurti available? price please" }
+  - { role: customer, text: 'apa medium cotton kurti available? price please' }
 expectations:
   - { kind: tool_called, tool: search_catalog }
-  - { kind: reply_contains, all: ["990"] }
+  - { kind: reply_contains, all: ['990'] }

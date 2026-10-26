@@ -22,6 +22,7 @@ describe('bKash environment selection', () => {
       LLM_PROVIDER: 'stub',
       ENCRYPTION_KEY: 'x'.repeat(32),
       BKASH_SANDBOX: sandbox,
+      PAYMENT_MODE: 'bkash',
       BKASH_USERNAME: 'test',
       BKASH_PASSWORD: 'test',
       BKASH_APP_KEY: 'test',

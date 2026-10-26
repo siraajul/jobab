@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   Body,
   Controller,
@@ -95,7 +96,10 @@ export class MetaController {
     }
 
     const payload = JSON.parse(raw.toString('utf8')) as MetaWebhookBody;
-    await this.service.handleEntries(payload.entry ?? []);
+    await this.service.handleEntries(
+      payload.entry ?? [],
+      payload.object === 'instagram' ? 'instagram' : 'facebook',
+    );
     return { ok: true };
   }
 
@@ -120,14 +124,21 @@ export class MetaController {
     if (!payload) throw new ForbiddenException('invalid signed request');
 
     const userId = payload.user_id;
-    const confirmationCode = `del_${Date.now()}_${userId.slice(0, 16)}`;
+    const confirmationCode = randomUUID();
 
     await this.service.scrubExternalUser(userId);
+    await this.service.recordDeletion(confirmationCode);
 
     return {
-      url: `${this.config.get<string>('PUBLIC_URL') ?? 'http://localhost:3000'}/data-deletion-status?code=${confirmationCode}`,
+      url: `${this.config.get<string>('PUBLIC_URL') ?? 'http://localhost:3000'}/webhooks/meta/data-deletion-status?code=${confirmationCode}`,
       confirmation_code: confirmationCode,
     };
+  }
+
+  @Get('data-deletion-status')
+  @ApiOperation({ summary: 'Look up a deletion receipt without exposing customer details' })
+  deletionStatus(@Query('code') code: string) {
+    return this.service.deletionStatus(z.string().uuid().parse(code));
   }
 
   @Post('fake')

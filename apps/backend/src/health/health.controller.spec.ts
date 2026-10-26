@@ -5,7 +5,7 @@
 import { HealthController } from './health.controller';
 
 describe('HealthController', () => {
-  const ctrl = new HealthController({} as never, {} as never, {} as never);
+  const ctrl = new HealthController({} as never, {} as never, {} as never, {} as never);
 
   it('liveness reports uptime', () => {
     const out = ctrl.liveness();

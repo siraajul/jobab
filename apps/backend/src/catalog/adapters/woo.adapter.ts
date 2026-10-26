@@ -1,3 +1,4 @@
+import { approvedStoreUrl } from './store-url';
 import { CatalogAdapter, CatalogProduct } from '../catalog-adapter';
 
 interface WooCreds {
@@ -36,15 +37,21 @@ export class WooAdapter implements CatalogAdapter {
 
   async *fetchAll(credentials: unknown): AsyncIterable<CatalogProduct[]> {
     const { siteUrl, consumerKey, consumerSecret } = credentials as WooCreds;
+    approvedStoreUrl(
+      siteUrl,
+      (process.env.WOO_ALLOWED_HOSTS ?? '').split(',').map((host) => host.trim().toLowerCase()),
+    );
     const base = `${siteUrl.replace(/\/$/, '')}/wp-json/wc/v3`;
     const auth = 'Basic ' + Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64');
 
     let page = 1;
     while (true) {
       const res = await fetch(`${base}/products?per_page=50&page=${page}`, {
+        redirect: 'error',
+        signal: AbortSignal.timeout(15000),
         headers: { authorization: auth, accept: 'application/json' },
       });
-      if (!res.ok) throw new Error(`Woo ${res.status}: ${await res.text()}`);
+      if (!res.ok) throw new Error(`Woo request failed (${res.status})`);
       const products = (await res.json()) as WooProduct[];
       if (products.length === 0) break;
 
@@ -62,6 +69,8 @@ export class WooAdapter implements CatalogAdapter {
 
         if (p.variations && p.variations.length > 0) {
           const vRes = await fetch(`${base}/products/${p.id}/variations?per_page=100`, {
+            redirect: 'error',
+            signal: AbortSignal.timeout(15000),
             headers: { authorization: auth, accept: 'application/json' },
           });
           if (vRes.ok) {
@@ -96,5 +105,8 @@ export class WooAdapter implements CatalogAdapter {
 }
 
 function stripHtml(s: string): string {
-  return s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  return s
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }

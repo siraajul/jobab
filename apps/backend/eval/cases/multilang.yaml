@@ -7,12 +7,11 @@ merchant_setup:
       price: 990
       variants: [{ name: Medium · Mustard, stock: 5 }]
 conversation:
-  - { role: customer, text: "আসসালামু আলাইকুম আপা, কুর্তি দেখতে চাই" }
+  - { role: customer, text: 'আসসালামু আলাইকুম আপা, কুর্তি দেখতে চাই' }
 expectations:
   - { kind: language, must_be_one_of: [bangla, banglish] }
 
 ---
-
 id: english-greeting
 description: Customer in English — agent should reply English
 merchant_setup:
@@ -22,13 +21,12 @@ merchant_setup:
       price: 990
       variants: [{ name: Medium · Mustard, stock: 5 }]
 conversation:
-  - { role: customer, text: "Hi! Do you have cotton kurtis?" }
+  - { role: customer, text: 'Hi! Do you have cotton kurtis?' }
 expectations:
   - { kind: language, must_be_one_of: [english] }
   - { kind: tool_called, tool: search_catalog }
 
 ---
-
 id: code-switch
 description: Customer mixes Bangla + English numerals + Banglish — agent should match register
 merchant_setup:
@@ -38,8 +36,8 @@ merchant_setup:
       price: 1650
       variants: [{ name: Medium · Red, stock: 5 }]
 conversation:
-  - { role: customer, text: "apa ei lal jamdani shari ta ki ache? size M lagbe, BDT te koto?" }
+  - { role: customer, text: 'apa ei lal jamdani shari ta ki ache? size M lagbe, BDT te koto?' }
 expectations:
   - { kind: tool_called, tool: search_catalog }
-  - { kind: reply_contains, all: ["1650"] }
+  - { kind: reply_contains, all: ['1650'] }
   - { kind: language, must_be_one_of: [banglish, english] }

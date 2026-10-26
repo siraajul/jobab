@@ -37,10 +37,24 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
         transport:
           process.env.NODE_ENV === 'production'
             ? undefined
-            : { target: 'pino-pretty', options: { singleLine: true, translateTime: 'SYS:HH:MM:ss.l' } },
+            : {
+                target: 'pino-pretty',
+                options: { singleLine: true, translateTime: 'SYS:HH:MM:ss.l' },
+              },
+        serializers: {
+          req: (req) => ({ id: req.id, method: req.method, url: req.url?.split('?')[0] }),
+        },
         customProps: (req) => ({ reqId: (req as { id?: string }).id }),
         redact: {
-          paths: ['req.headers.authorization', 'req.headers["x-org-id"]', '*.accessToken', '*.token'],
+          paths: [
+            'req.headers.authorization',
+            'req.headers.cookie',
+            'res.headers["set-cookie"]',
+            'req.headers["x-org-id"]',
+            '*.accessToken',
+            '*.token',
+            '*.password',
+          ],
           remove: true,
         },
       },

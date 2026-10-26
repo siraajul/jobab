@@ -28,7 +28,13 @@ export type MessageSender = z.infer<typeof MessageSenderSchema>;
 export const MessageDirectionSchema = z.enum(['in', 'out']);
 export type MessageDirection = z.infer<typeof MessageDirectionSchema>;
 
-export const OrderStatusSchema = z.enum(['created', 'confirmed', 'shipped', 'delivered', 'cancelled']);
+export const OrderStatusSchema = z.enum([
+  'created',
+  'confirmed',
+  'shipped',
+  'delivered',
+  'cancelled',
+]);
 export type OrderStatus = z.infer<typeof OrderStatusSchema>;
 
 export const PaymentStatusSchema = z.enum(['pending', 'paid', 'failed']);

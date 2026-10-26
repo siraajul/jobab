@@ -26,6 +26,13 @@ export const EnvSchema = z
     DATABASE_URL: z.string().url().or(z.string().startsWith('postgresql://')),
     REDIS_URL: z.string().url().or(z.string().startsWith('redis://')),
 
+    EMAIL_MODE: z.enum(['disabled', 'outbox', 'resend']).default('disabled'),
+    EMAIL_FROM: z.string().optional(),
+    RESEND_API_KEY: z.string().optional(),
+    PAYMENT_MODE: z.enum(['cod', 'bkash']).default('cod'),
+    PROVIDER_TIMEOUT_MS: z.coerce.number().int().min(1000).max(30000).default(15000),
+    AI_DAILY_TOKEN_LIMIT: z.coerce.number().int().min(1000).default(100000),
+    ALERT_WEBHOOK_URL: z.string().url().optional(),
     // Meta / Facebook
     META_APP_ID: z.string().min(1).optional(),
     META_APP_SECRET: z.string().min(1),
@@ -86,6 +93,42 @@ export const EnvSchema = z
     BKASH_SANDBOX: envBoolean.default(true),
   })
   .superRefine((env, ctx) => {
+    if (env.EMAIL_MODE === 'resend' && (!env.RESEND_API_KEY || !env.EMAIL_FROM)) {
+      ctx.addIssue({
+        path: ['EMAIL_MODE'],
+        code: z.ZodIssueCode.custom,
+        message: 'Resend requires EMAIL_FROM and RESEND_API_KEY.',
+      });
+    }
+    if (env.NODE_ENV === 'production') {
+      for (const [key, ok] of [
+        ['EMAIL_MODE', env.EMAIL_MODE === 'resend'],
+        ['PUBLIC_URL', env.PUBLIC_URL.startsWith('https://')],
+        ['WEB_ORIGIN', env.WEB_ORIGIN.split(',').every((origin) => origin.startsWith('https://'))],
+        ['MESSENGER_DRY_RUN', !env.MESSENGER_DRY_RUN],
+        ['LLM_PROVIDER', env.LLM_PROVIDER === 'groq'],
+      ] as const)
+        if (!ok)
+          ctx.addIssue({
+            path: [key],
+            code: z.ZodIssueCode.custom,
+            message: 'Unsafe production configuration.',
+          });
+      if (
+        env.PAYMENT_MODE === 'bkash' &&
+        (env.BKASH_SANDBOX ||
+          !env.BKASH_USERNAME ||
+          !env.BKASH_PASSWORD ||
+          !env.BKASH_APP_KEY ||
+          !env.BKASH_APP_SECRET)
+      ) {
+        ctx.addIssue({
+          path: ['PAYMENT_MODE'],
+          code: z.ZodIssueCode.custom,
+          message: 'Live bKash credentials and BKASH_SANDBOX=false are required.',
+        });
+      }
+    }
     // LLM_API_KEY is required unless we're running the in-memory stub provider.
     if (env.LLM_PROVIDER !== 'stub' && (!env.LLM_API_KEY || env.LLM_API_KEY.length === 0)) {
       ctx.addIssue({

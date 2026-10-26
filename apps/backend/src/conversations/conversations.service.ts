@@ -30,7 +30,7 @@ export class ConversationsService {
     const conv = await this.prisma.conversation.findFirst({
       where: { id, organizationId },
       include: {
-        page: true,
+        page: { select: { id: true, platform: true, externalPageId: true, status: true } },
         messages: { orderBy: { createdAt: 'asc' }, take: 200 },
         orders: { orderBy: { createdAt: 'desc' }, take: 1 },
         tags: { include: { tag: { select: { id: true, name: true, color: true } } } },
@@ -137,7 +137,7 @@ export class ConversationsService {
     await this.requireOwn(organizationId, id);
     return this.prisma.conversation.update({
       where: { id },
-      data: { status: ConversationStatus.human },
+      data: { status: ConversationStatus.human, automationVersion: { increment: 1 } },
     });
   }
 
@@ -145,7 +145,7 @@ export class ConversationsService {
     await this.requireOwn(organizationId, id);
     return this.prisma.conversation.update({
       where: { id },
-      data: { status: ConversationStatus.bot },
+      data: { status: ConversationStatus.bot, automationVersion: { increment: 1 } },
     });
   }
 
@@ -184,29 +184,8 @@ export class ConversationsService {
 
   async sendMerchantReply(organizationId: string, id: string, text: string) {
     await this.requireOwn(organizationId, id);
-    // Check the 24-hour customer-service window BEFORE persisting — out-of-window
-    // sends throw OutOfMessagingWindowError, which the controller surfaces as a 400.
-    // Otherwise we'd leave a ghost merchant-message that never reached the customer.
-    const window = await this.messenger.getMessagingWindow(id);
-    if (!window.canSend) {
-      // Let the messenger throw so the error class + payload stay in one place.
-      await this.messenger.sendText(id, text);
-    }
-    // Persist the merchant message …
-    const msg = await this.prisma.message.create({
-      data: {
-        conversationId: id,
-        direction: Direction.out,
-        sender: Sender.human,
-        content: text,
-      },
-    });
-    // … and hand off to the Send API. Note: MessengerService.sendText ALSO
-    // persists an outgoing message (with sender='agent'). The merchant-vs-agent
-    // sender distinction means both rows survive — by design, so the inbox
-    // can show the human-typed message separately from the AI auto-acks.
-    await this.messenger.sendText(id, text);
-    return msg;
+    await this.takeOver(organizationId, id);
+    return this.messenger.sendText(id, text, undefined, { sender: 'human' });
   }
 
   private async requireOwn(organizationId: string, id: string) {

@@ -33,7 +33,12 @@ export class GroqVisionProvider implements VisionProvider {
     if (this.client) return this.client;
     const apiKey = this.config.get<string>('LLM_API_KEY');
     if (!apiKey || apiKey === 'replace-me') throw new Error('LLM_API_KEY not set');
-    this.client = new OpenAI({ apiKey, baseURL: 'https://api.groq.com/openai/v1' });
+    this.client = new OpenAI({
+      apiKey,
+      baseURL: 'https://api.groq.com/openai/v1',
+      timeout: this.config.get<number>('PROVIDER_TIMEOUT_MS') ?? 15000,
+      maxRetries: 1,
+    });
     return this.client;
   }
 
@@ -82,7 +87,10 @@ export class GroqVisionProvider implements VisionProvider {
     }
 
     const candidateList = input.candidates
-      .map((c, i) => `${i + 1}. id=${c.productId} · ${c.title}${c.description ? ` — ${c.description}` : ''}`)
+      .map(
+        (c, i) =>
+          `${i + 1}. id=${c.productId} · ${c.title}${c.description ? ` — ${c.description}` : ''}`,
+      )
       .join('\n');
 
     // Build multimodal content: customer photo + each candidate image (when
@@ -91,7 +99,7 @@ export class GroqVisionProvider implements VisionProvider {
       {
         type: 'text',
         text:
-          'You are matching a customer photo to one of the merchant\'s products.\n\n' +
+          "You are matching a customer photo to one of the merchant's products.\n\n" +
           'CUSTOMER PHOTO (first image):\n' +
           'CANDIDATES (in order):\n' +
           candidateList +

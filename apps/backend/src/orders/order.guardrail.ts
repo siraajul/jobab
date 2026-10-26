@@ -24,6 +24,7 @@ export interface CreateOrderInput {
   organizationId: string;
   conversationId: string;
   proposedItems: ProposedItem[];
+  automationVersion?: number;
 }
 
 export type CreateOrderResult =
@@ -92,7 +93,7 @@ export class OrderGuardrail {
       paymentLink = link.link;
       await this.prisma.order.update({
         where: { id: order.id },
-        data: { paymentLink: link.link },
+        data: { paymentLink: link.link, paymentId: link.externalRef },
       });
     } catch (err) {
       this.log.warn(`payment link generation failed for ${order.id}: ${(err as Error).message}`);
@@ -134,6 +135,12 @@ export class OrderGuardrail {
       where: { id: input.conversationId, organizationId: input.organizationId },
     });
 
+    if (
+      input.automationVersion !== undefined &&
+      (conversation.status !== 'bot' || conversation.automationVersion !== input.automationVersion)
+    ) {
+      throw new BadRequestException('AI generation cancelled by merchant');
+    }
     // 0. One active order per conversation. The model can ask the merchant to
     //    open a new conversation if the customer wants a second order.
     const existing = await tx.order.findFirst({

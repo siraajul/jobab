@@ -57,7 +57,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     if (status >= 500) {
       this.log.error(
-        `[${req.id}] ${req.method} ${req.url} → ${status} ${title}: ${detail ?? ''}`,
+        `[${req.id}] ${req.method} ${req.path} → ${status} ${title}: ${detail ?? ''}`,
         exception instanceof Error ? exception.stack : undefined,
       );
     }
@@ -66,8 +66,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
       type: `about:blank`,
       title,
       status,
-      detail,
-      instance: req.url,
+      detail: status >= 500 ? 'The request could not be completed. Try again later.' : detail,
+      instance: req.path,
       requestId: req.id,
       ...(errors ? { errors } : {}),
     });

@@ -82,13 +82,9 @@ export class AuthGuard implements CanActivate {
   }
 }
 
-/** Decorator: restrict route to the listed roles. */
-export const Roles =
-  (...roles: MemberRole[]): MethodDecorator =>
-  (target, key, descriptor) => {
-    Reflect.defineMetadata(ROLES_KEY, roles, descriptor.value as object);
-    return descriptor;
-  };
+/** Restrict either a controller or an individual route to the listed roles. */
+export const Roles = (...roles: MemberRole[]): MethodDecorator & ClassDecorator =>
+  SetMetadata(ROLES_KEY, roles);
 
 /** Param decorator: inject the authenticated user. */
 export const CurrentUser = createParamDecorator((_: unknown, ctx: ExecutionContext) => {

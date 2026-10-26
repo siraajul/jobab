@@ -1,8 +1,16 @@
+import { readdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { Controller, Get } from '@nestjs/common';
-import { HealthCheck, HealthCheckService, PrismaHealthIndicator } from '@nestjs/terminus';
+import {
+  HealthCheck,
+  HealthCheckService,
+  PrismaHealthIndicator,
+  HealthCheckError,
+} from '@nestjs/terminus';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiInlineOk } from '../swagger/decorators';
 import { PrismaService } from '../prisma/prisma.service';
+import { AgentQueueService } from '../queue/agent-queue.service';
 import { Public } from '../auth/auth.guard';
 
 @Public()
@@ -13,6 +21,7 @@ export class HealthController {
     private readonly health: HealthCheckService,
     private readonly db: PrismaHealthIndicator,
     private readonly prisma: PrismaService,
+    private readonly queue: AgentQueueService,
   ) {}
 
   @Get('healthz')
@@ -42,6 +51,29 @@ export class HealthController {
     details: { postgres: { status: 'up' } },
   })
   readiness() {
-    return this.health.check([() => this.db.pingCheck('postgres', this.prisma)]);
+    return this.health.check([
+      () => this.db.pingCheck('postgres', this.prisma),
+      async () => {
+        const expected = readdirSync(resolve(__dirname, '../../prisma/migrations'), {
+          withFileTypes: true,
+        })
+          .filter((entry) => entry.isDirectory())
+          .map((entry) => entry.name);
+        const applied = await this.prisma.$queryRaw<
+          Array<{ migration_name: string }>
+        >`SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL`;
+        if (expected.some((name) => !applied.some((row) => row.migration_name === name)))
+          throw new HealthCheckError('Migrations pending', { migrations: { status: 'down' } });
+        return { migrations: { status: 'up' } };
+      },
+      async () => {
+        try {
+          if (await this.queue.health()) return { redis: { status: 'up' } };
+        } catch {
+          /* report unhealthy */
+        }
+        throw new HealthCheckError('Redis unavailable', { redis: { status: 'down' } });
+      },
+    ]);
   }
 }

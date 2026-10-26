@@ -13,7 +13,10 @@ function signed(payload: unknown, key = secret): string {
 const valid = { algorithm: 'HMAC-SHA256', user_id: 'customer1' };
 
 describe('Meta data deletion', () => {
-  const service = { scrubExternalUser: jest.fn(async () => undefined) };
+  const service = {
+    recordDeletion: jest.fn(async () => undefined),
+    scrubExternalUser: jest.fn(async () => undefined),
+  };
   const config: Record<string, string> = {
     META_APP_SECRET: secret,
     PUBLIC_URL: 'https://jobab.example',

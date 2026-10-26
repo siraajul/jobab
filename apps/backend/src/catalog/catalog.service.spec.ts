@@ -37,7 +37,7 @@ describe('CatalogService.search', () => {
             return ['description', (o.description as { contains: string }).contains];
           return [
             'variant',
-            ((o.variants as { some: { name: { contains: string } } }).some.name.contains),
+            (o.variants as { some: { name: { contains: string } } }).some.name.contains,
           ];
         });
         return products
