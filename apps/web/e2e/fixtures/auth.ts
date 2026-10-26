@@ -9,7 +9,7 @@ import { test as base, expect } from '@playwright/test';
 export const test = base.extend<{
   authedPage: typeof base extends never ? never : import('@playwright/test').Page;
 }>({
-  authedPage: async ({ page, request, baseURL }, use) => {
+  authedPage: async ({ page, request, baseURL }, providePage) => {
     const email = process.env.E2E_USER_EMAIL;
     const password = process.env.E2E_USER_PASSWORD;
     if (!email || !password) {
@@ -24,7 +24,7 @@ export const test = base.extend<{
     if (setCookies.length === 0) {
       throw new Error('Login did not return a session cookie.');
     }
-    await use(page);
+    await providePage(page);
   },
 });
 

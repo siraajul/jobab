@@ -46,11 +46,21 @@ export function useConnectPage(onPagesConnected: () => void | Promise<void>) {
 
   // Handle the post-callback ?fb=connected / ?fb=error param.
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    let cancelled = false;
     const params = new URLSearchParams(window.location.search);
     const fb = params.get('fb');
     if (fb === 'connected') {
-      void loadPages();
+      void api
+        .listFacebookPages()
+        .then(({ pages }) => {
+          if (cancelled) return;
+          setPages(pages);
+          if (pages.length > 0) setPicked({ [pages[0].pageId]: true });
+        })
+        .catch(() => {
+          if (!cancelled)
+            toast('error', "Couldn't load your Facebook pages. Try the connect button again.");
+        });
       // Clean the query so a refresh doesn't re-trigger.
       window.history.replaceState(null, '', window.location.pathname);
     } else if (fb === 'error') {
@@ -58,8 +68,10 @@ export function useConnectPage(onPagesConnected: () => void | Promise<void>) {
       toast('error', `Facebook connect failed: ${reason}`);
       window.history.replaceState(null, '', window.location.pathname);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [toast]);
 
   const beginOAuth = async () => {
     setBusy(true);
@@ -68,20 +80,6 @@ export function useConnectPage(onPagesConnected: () => void | Promise<void>) {
       window.location.href = url;
     } catch {
       toast('error', "Couldn't start Facebook login. Is META_APP_ID set?");
-      setBusy(false);
-    }
-  };
-
-  const loadPages = async () => {
-    setBusy(true);
-    try {
-      const { pages } = await api.listFacebookPages();
-      setPages(pages);
-      // Default-pick the first page so the merchant can one-click "Connect 1 page".
-      if (pages.length > 0) setPicked({ [pages[0].pageId]: true });
-    } catch {
-      toast('error', "Couldn't load your Facebook pages. Try the connect button again.");
-    } finally {
       setBusy(false);
     }
   };

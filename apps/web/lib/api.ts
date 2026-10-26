@@ -74,6 +74,17 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
+  requestPasswordReset: (email: string) =>
+    fetcher<{ ok: boolean }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+  resetPassword: (token: string, password: string) =>
+    fetcher<{ ok: boolean }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    }),
+  revokeSessions: () => fetcher<{ ok: boolean }>('/auth/revoke-sessions', { method: 'POST' }),
   logout: () => fetcher<unknown>('/auth/logout', { method: 'POST' }),
   signUp: (body: { email: string; password: string; name: string; organizationName: string }) =>
     fetcher<CurrentUser>('/auth/sign-up', {

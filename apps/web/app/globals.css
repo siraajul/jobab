@@ -9,63 +9,70 @@
    color: var(--…) bindings in tailwind.config.ts.
    ============================================================ */
 .theme-light {
-  --bg: #FAF7F2;
-  --surface: #FFFFFF;
-  --surface-2: #F4EFE6;
-  --surface-3: #ECE5D8;
-  --ink: #2A2722;
-  --ink-2: #6C645A;
-  --ink-3: #9B9285;
-  --border: #EBE4D7;
-  --border-2: #DDD4C4;
-  --accent: #1F6E47;
-  --on-accent: #FFFFFF;
-  --amber: #9A6B0E;
-  --amber-bg: #F6EDD6;
-  --red: #AE3A2C;
-  --red-bg: #F5E2DD;
-  --paid: #2E7D4F;
-  --paid-bg: #E4EFE6;
-  --you: #3C4A86;
-  --you-bg: #E7E9F4;
-  --shadow-sm: 0 1px 2px rgba(60,45,25,.05), 0 1px 3px rgba(60,45,25,.05);
-  --shadow-md: 0 2px 6px rgba(60,45,25,.06), 0 10px 28px rgba(60,45,25,.07);
-  --shadow-lg: 0 8px 24px rgba(60,45,25,.10), 0 24px 60px rgba(60,45,25,.10);
+  --bg: #faf7f2;
+  --surface: #ffffff;
+  --surface-2: #f4efe6;
+  --surface-3: #ece5d8;
+  --ink: #2a2722;
+  --ink-2: #6c645a;
+  --ink-3: #9b9285;
+  --border: #ebe4d7;
+  --border-2: #ddd4c4;
+  --accent: #1f6e47;
+  --on-accent: #ffffff;
+  --amber: #9a6b0e;
+  --amber-bg: #f6edd6;
+  --red: #ae3a2c;
+  --red-bg: #f5e2dd;
+  --paid: #2e7d4f;
+  --paid-bg: #e4efe6;
+  --you: #3c4a86;
+  --you-bg: #e7e9f4;
+  --shadow-sm: 0 1px 2px rgba(60, 45, 25, 0.05), 0 1px 3px rgba(60, 45, 25, 0.05);
+  --shadow-md: 0 2px 6px rgba(60, 45, 25, 0.06), 0 10px 28px rgba(60, 45, 25, 0.07);
+  --shadow-lg: 0 8px 24px rgba(60, 45, 25, 0.1), 0 24px 60px rgba(60, 45, 25, 0.1);
   --accent-soft: color-mix(in oklab, var(--accent) 12%, var(--surface));
   --accent-line: color-mix(in oklab, var(--accent) 26%, var(--surface));
-  --accent-ink:  color-mix(in oklab, var(--accent) 82%, #000);
+  --accent-ink: color-mix(in oklab, var(--accent) 82%, #000);
 }
 
 .theme-dark {
-  --bg: #16130F;
-  --surface: #211D17;
-  --surface-2: #2A251E;
-  --surface-3: #342E25;
-  --ink: #F1ECE2;
-  --ink-2: #B0A698;
-  --ink-3: #7F7768;
-  --border: #322C24;
+  --bg: #16130f;
+  --surface: #211d17;
+  --surface-2: #2a251e;
+  --surface-3: #342e25;
+  --ink: #f1ece2;
+  --ink-2: #b0a698;
+  --ink-3: #7f7768;
+  --border: #322c24;
   --border-2: #403930;
-  --accent: #1F6E47;
-  --on-accent: #FFFFFF;
-  --amber: #E0AF4E;
+  --accent: #1f6e47;
+  --on-accent: #ffffff;
+  --amber: #e0af4e;
   --amber-bg: #34291296;
-  --red: #E08A78;
-  --red-bg: #3A201996;
-  --paid: #6FC18C;
-  --paid-bg: #1E2E2196;
-  --you: #A9B4E8;
+  --red: #e08a78;
+  --red-bg: #3a201996;
+  --paid: #6fc18c;
+  --paid-bg: #1e2e2196;
+  --you: #a9b4e8;
   --you-bg: #23253296;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
-  --shadow-md: 0 2px 8px rgba(0,0,0,.35), 0 12px 30px rgba(0,0,0,.35);
-  --shadow-lg: 0 10px 30px rgba(0,0,0,.45), 0 30px 70px rgba(0,0,0,.5);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.35), 0 12px 30px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.45), 0 30px 70px rgba(0, 0, 0, 0.5);
   --accent-soft: color-mix(in oklab, var(--accent) 30%, var(--surface));
   --accent-line: color-mix(in oklab, var(--accent) 46%, var(--surface));
-  --accent-ink:  color-mix(in oklab, var(--accent) 50%, #fff);
+  --accent-ink: color-mix(in oklab, var(--accent) 50%, #fff);
 }
 
-html, body { background: var(--bg); color: var(--ink); }
-body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+body {
+  font-family: 'Hind Siliguri', system-ui, sans-serif;
+  line-height: 1.45;
+}
 
 /* ============================================================
    Print — when the merchant prints an order receipt, hide the
@@ -75,7 +82,12 @@ body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
    @media print block below). We don't use `display: none` because the print
    stylesheet needs the element to be in the layout tree so we can flip it on
    alongside its hidden ancestors. */
-.invoice-print { position: absolute; left: -10000px; top: 0; pointer-events: none; }
+.invoice-print {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  pointer-events: none;
+}
 
 @media print {
   /* `margin: 0` is the trick that stops Chrome/Safari from auto-injecting the
@@ -86,9 +98,10 @@ body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
     size: A4;
     margin: 0;
   }
-  html, body {
+  html,
+  body {
     background: #fff !important;
-    color: #2A2722 !important;
+    color: #2a2722 !important;
     height: auto !important;
     overflow: visible !important;
   }
@@ -101,8 +114,13 @@ body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
   }
   /* Visibility (unlike display) lets a visible descendant punch through a
      hidden ancestor — so we hide everything, then reveal only the invoice. */
-  body * { visibility: hidden !important; }
-  .invoice-print, .invoice-print * { visibility: visible !important; }
+  body * {
+    visibility: hidden !important;
+  }
+  .invoice-print,
+  .invoice-print * {
+    visibility: visible !important;
+  }
   /* Lift the invoice out of the dashboard's scroll container so it spans the
      printed page instead of sitting behind app chrome that's clipping it. */
   .invoice-print {
@@ -112,7 +130,7 @@ body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
     width: 100% !important;
     pointer-events: none;
     background: #fff;
-    color: #2A2722;
+    color: #2a2722;
     font-family: 'Hind Siliguri', system-ui, sans-serif;
   }
 
@@ -126,7 +144,7 @@ body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
     font-size: 140pt;
     font-weight: 800;
     letter-spacing: -0.02em;
-    color: #1F6E47;
+    color: #1f6e47;
     opacity: 0.04;
     pointer-events: none;
     z-index: 0;
@@ -147,8 +165,12 @@ body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
     width: 100%;
     height: 14px;
   }
-  .invoice-band-top { margin: 0 0 18px; }
-  .invoice-band-bottom { margin: 22px 0 12px; }
+  .invoice-band-top {
+    margin: 0 0 18px;
+  }
+  .invoice-band-bottom {
+    margin: 22px 0 12px;
+  }
 
   /* ─── Header ───────────────────────────────────────────────────────── */
   .invoice-head {
@@ -163,29 +185,34 @@ body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
     align-items: flex-start;
     gap: 12px;
   }
-  .invoice-mark { flex-shrink: 0; margin-top: 4px; }
+  .invoice-mark {
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
   .invoice-shop {
     font-family: 'Bricolage Grotesque', system-ui, sans-serif;
     font-size: 26pt;
     font-weight: 700;
     letter-spacing: -0.015em;
-    line-height: 1.0;
-    color: #1F6E47;
+    line-height: 1;
+    color: #1f6e47;
   }
   .invoice-sub {
     margin-top: 6px;
     font-size: 8.5pt;
     text-transform: uppercase;
     letter-spacing: 0.22em;
-    color: #6C645A;
+    color: #6c645a;
     font-weight: 600;
   }
-  .invoice-meta { text-align: right; }
+  .invoice-meta {
+    text-align: right;
+  }
   .invoice-no-label {
     font-size: 8pt;
     text-transform: uppercase;
     letter-spacing: 0.2em;
-    color: #6C645A;
+    color: #6c645a;
     font-weight: 700;
   }
   .invoice-no {
@@ -193,13 +220,13 @@ body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
     font-family: 'Bricolage Grotesque', system-ui, sans-serif;
     font-weight: 700;
     font-size: 16pt;
-    color: #2A2722;
+    color: #2a2722;
     letter-spacing: 0.04em;
   }
   .invoice-date {
     margin-top: 6px;
     font-size: 9.5pt;
-    color: #6C645A;
+    color: #6c645a;
     line-height: 1.35;
   }
 
@@ -211,8 +238,8 @@ body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
     margin-bottom: 24px;
   }
   .invoice-card {
-    background: #FAF7F2;
-    border: 1px solid #EBE4D7;
+    background: #faf7f2;
+    border: 1px solid #ebe4d7;
     border-radius: 10px;
     padding: 14px 16px;
   }
@@ -221,28 +248,30 @@ body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.22em;
-    color: #6C645A;
+    color: #6c645a;
   }
   .invoice-name {
     margin-top: 6px;
     font-family: 'Bricolage Grotesque', system-ui, sans-serif;
     font-weight: 700;
     font-size: 13.5pt;
-    color: #2A2722;
+    color: #2a2722;
   }
   .invoice-customer-line {
     margin-top: 2px;
     font-size: 10.5pt;
-    color: #2A2722;
+    color: #2a2722;
   }
-  .invoice-address { color: #6C645A; }
+  .invoice-address {
+    color: #6c645a;
+  }
   .invoice-status {
     margin-top: 6px;
     font-family: 'Bricolage Grotesque', system-ui, sans-serif;
     font-weight: 700;
     font-size: 14pt;
     letter-spacing: 0.06em;
-    color: #2A2722;
+    color: #2a2722;
   }
   .invoice-payment {
     margin-top: 8px;
@@ -262,9 +291,18 @@ body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
     border-radius: 999px;
     background: currentColor;
   }
-  .invoice-payment-paid    { background: #E4EFE6; color: #2E7D4F; }
-  .invoice-payment-pending { background: #F6EDD6; color: #9A6B0E; }
-  .invoice-payment-failed  { background: #F5E2DD; color: #AE3A2C; }
+  .invoice-payment-paid {
+    background: #e4efe6;
+    color: #2e7d4f;
+  }
+  .invoice-payment-pending {
+    background: #f6edd6;
+    color: #9a6b0e;
+  }
+  .invoice-payment-failed {
+    background: #f5e2dd;
+    color: #ae3a2c;
+  }
 
   /* ─── Items section ────────────────────────────────────────────────── */
   .invoice-section-title {
@@ -273,7 +311,7 @@ body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.24em;
-    color: #1F6E47;
+    color: #1f6e47;
     margin: 4px 0 8px;
   }
   .invoice-table {
@@ -287,24 +325,26 @@ body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.16em;
-    color: #6C645A;
-    border-bottom: 2px solid #1F6E47;
+    color: #6c645a;
+    border-bottom: 2px solid #1f6e47;
     padding: 9px 8px;
   }
   .invoice-table tbody td {
     padding: 12px 8px;
-    border-bottom: 1px solid #EBE4D7;
+    border-bottom: 1px solid #ebe4d7;
     vertical-align: top;
   }
-  .invoice-table tbody tr:last-child td { border-bottom: none; }
+  .invoice-table tbody tr:last-child td {
+    border-bottom: none;
+  }
   .invoice-item-title {
     font-family: 'Bricolage Grotesque', system-ui, sans-serif;
     font-weight: 600;
-    color: #2A2722;
+    color: #2a2722;
   }
   .invoice-item-variant {
     font-size: 10pt;
-    color: #6C645A;
+    color: #6c645a;
   }
 
   /* ─── Totals — hero emerald block ──────────────────────────────────── */
@@ -315,7 +355,7 @@ body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
   }
   .invoice-totals {
     width: 300px;
-    border: 1px solid #EBE4D7;
+    border: 1px solid #ebe4d7;
     border-radius: 12px;
     overflow: hidden;
   }
@@ -324,15 +364,17 @@ body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
     justify-content: space-between;
     padding: 8px 14px;
     font-size: 10.5pt;
-    color: #2A2722;
+    color: #2a2722;
   }
-  .invoice-totals-row + .invoice-totals-row { border-top: 1px dashed #EBE4D7; }
+  .invoice-totals-row + .invoice-totals-row {
+    border-top: 1px dashed #ebe4d7;
+  }
   .invoice-totals-grand {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #1F6E47;
-    color: #FFFFFF;
+    background: #1f6e47;
+    color: #ffffff;
     padding: 14px 16px;
     font-family: 'Bricolage Grotesque', system-ui, sans-serif;
     font-weight: 700;
@@ -350,9 +392,9 @@ body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
   .invoice-pay-link {
     margin-top: 22px;
     padding: 14px 16px;
-    border: 1.5px dashed #1F6E47;
+    border: 1.5px dashed #1f6e47;
     border-radius: 10px;
-    background: #F4F9F5;
+    background: #f4f9f5;
   }
   .invoice-pay-head {
     display: flex;
@@ -362,7 +404,7 @@ body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
   }
   .invoice-pay-instructions {
     font-size: 9pt;
-    color: #6C645A;
+    color: #6c645a;
     font-style: italic;
   }
   .invoice-pay-url {
@@ -370,7 +412,7 @@ body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
     font-family: ui-monospace, Menlo, monospace;
     font-size: 10pt;
     word-break: break-all;
-    color: #1F6E47;
+    color: #1f6e47;
     font-weight: 600;
   }
 
@@ -384,32 +426,37 @@ body { font-family: 'Hind Siliguri', system-ui, sans-serif; line-height: 1.45; }
     justify-content: center;
     gap: 10px;
     padding-bottom: 12px;
-    border-bottom: 1px solid #EBE4D7;
+    border-bottom: 1px solid #ebe4d7;
     text-align: center;
   }
   .invoice-thanks-line {
     font-family: 'Bricolage Grotesque', system-ui, sans-serif;
     font-size: 11.5pt;
     font-weight: 600;
-    color: #2A2722;
+    color: #2a2722;
   }
   .invoice-thanks-sub {
     margin-top: 2px;
     font-size: 9.5pt;
-    color: #6C645A;
+    color: #6c645a;
   }
   .invoice-fineprint {
     margin-top: 10px;
     font-size: 8pt;
     letter-spacing: 0.1em;
-    color: #9B9285;
+    color: #9b9285;
     text-align: center;
   }
 }
 
 /* Scrollbar — matches the prototype */
-::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
 ::-webkit-scrollbar-thumb {
   background: color-mix(in oklab, var(--ink-3) 40%, transparent);
-  border-radius: 10px; border: 3px solid transparent; background-clip: padding-box;
+  border-radius: 10px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
 }

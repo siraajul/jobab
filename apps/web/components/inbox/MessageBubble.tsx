@@ -8,12 +8,14 @@ export function MessageBubble({
   children,
   time,
   attachments,
+  deliveryStatus,
   onPickCandidate,
 }: {
   sender: MessageSender;
   children: React.ReactNode;
   time?: string;
   attachments?: MessageAttachments | null;
+  deliveryStatus?: string;
   /** Called when the merchant clicks a candidate-match card to assert that
    *  product. Wired by Thread → InboxClient → api.assertProduct. */
   onPickCandidate?: (productId: string) => void;
@@ -53,7 +55,9 @@ export function MessageBubble({
           )}
           {/* image attachments — render before the text */}
           {images.length > 0 && (
-            <div className={cn('mb-2 grid gap-1.5', images.length > 1 ? 'grid-cols-2' : 'grid-cols-1')}>
+            <div
+              className={cn('mb-2 grid gap-1.5', images.length > 1 ? 'grid-cols-2' : 'grid-cols-1')}
+            >
               {images.map((url, i) => (
                 <a
                   key={i}
@@ -73,6 +77,19 @@ export function MessageBubble({
             </div>
           )}
           <div>{children}</div>
+          {!isCustomer && deliveryStatus && !['sent', 'received'].includes(deliveryStatus) && (
+            <p className={cn('mt-2 text-sm', isYou ? 'text-white' : 'text-ink-2')} role="status">
+              {deliveryStatus === 'dry_run'
+                ? 'Preview only · not sent to customer'
+                : deliveryStatus === 'unknown' || deliveryStatus === 'sending'
+                  ? 'Delivery unconfirmed · check the channel before resending'
+                  : deliveryStatus === 'failed'
+                    ? 'Not delivered · check the channel connection'
+                    : deliveryStatus === 'cancelled'
+                      ? 'Cancelled after takeover'
+                      : 'Waiting to send'}
+            </p>
+          )}
           {time && (
             <span className={cn('mt-1 block text-[11px]', isYou ? 'text-white/70' : 'text-ink-3')}>
               {time}

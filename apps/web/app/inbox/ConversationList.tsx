@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { ConversationRow } from '@/components/inbox/ConversationRow';
 import { ChannelBadge } from '@/components/inbox/ChannelBadge';
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -63,8 +64,9 @@ export function ConversationList({
   setQuery: (q: string) => void;
   activeId: string | null;
   selectConversation: (id: string) => void;
-  searchRef?: React.RefObject<HTMLInputElement>;
+  searchRef?: React.RefObject<HTMLInputElement | null>;
 }) {
+  const router = useRouter();
   const memberName = (userId: string | null | undefined): string | null => {
     if (!userId) return null;
     const m = members.find((m) => m.user.id === userId);
@@ -113,7 +115,11 @@ export function ConversationList({
 
         {/* Channel filter — compact segmented control so it never overflows the
             narrow list column. */}
-        <div className="flex items-center gap-0.5 rounded-full bg-surface-2 p-0.5" role="tablist" aria-label="Channel">
+        <div
+          className="flex items-center gap-0.5 rounded-full bg-surface-2 p-0.5"
+          role="tablist"
+          aria-label="Channel"
+        >
           {CHANNELS.map((ch) => {
             const n = ch.key === 'all' ? 0 : channelCounts[ch.key as keyof typeof channelCounts];
             return (
@@ -125,7 +131,9 @@ export function ConversationList({
                 title={ch.key === 'all' ? 'All channels' : `${ch.label} · ${n}`}
                 className={cn(
                   'inline-flex h-6 items-center justify-center rounded-full px-2 text-[11px] font-bold transition',
-                  channel === ch.key ? 'bg-surface text-ink shadow-sm' : 'text-ink-3 hover:text-ink-2',
+                  channel === ch.key
+                    ? 'bg-surface text-ink shadow-sm'
+                    : 'text-ink-3 hover:text-ink-2',
                 )}
               >
                 {ch.key === 'all' ? 'All' : <ChannelBadge platform={ch.key} size={15} />}
@@ -144,9 +152,7 @@ export function ConversationList({
             aria-selected={filter === f.key}
             className={
               'inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5 text-[12.5px] font-semibold transition ' +
-              (filter === f.key
-                ? 'bg-ink text-bg'
-                : 'bg-surface-2 text-ink-2 hover:bg-surface-3')
+              (filter === f.key ? 'bg-ink text-bg' : 'bg-surface-2 text-ink-2 hover:bg-surface-3')
             }
           >
             {f.label}
@@ -191,7 +197,8 @@ export function ConversationList({
         type="button"
         onClick={async () => {
           await fetch('/api/backend/auth/logout', { method: 'POST' });
-          window.location.href = '/login';
+          router.replace('/login');
+          router.refresh();
         }}
         className="m-3 rounded-lg border border-border-2 bg-surface px-3 py-2 text-[12px] font-semibold uppercase tracking-[0.16em] text-ink-2 transition hover:bg-surface-2"
       >
@@ -203,7 +210,15 @@ export function ConversationList({
 
 function SearchIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden
+    >
       <circle cx="11" cy="11" r="7" />
       <path d="M21 21l-4.3-4.3" />
     </svg>
@@ -211,7 +226,15 @@ function SearchIcon() {
 }
 function CloseIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden
+    >
       <path d="M6 6l12 12M6 18L18 6" />
     </svg>
   );

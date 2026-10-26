@@ -5,6 +5,7 @@ const createJestConfig = nextJest({ dir: './' });
 /** @type {import('jest').Config} */
 const config = {
   testEnvironment: 'jsdom',
+  modulePathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/.next-readiness/'],
   // MSW v2 exposes `msw/node` only when the `node` export condition wins.
   // jsdom defaults to `browser` which msw explicitly nulls out, so we add
   // `node` to the conditions Jest passes to the resolver.

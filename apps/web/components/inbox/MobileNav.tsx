@@ -46,7 +46,12 @@ export function MobileNav({
             )}
           >
             <div className="relative flex h-7 items-center">
-              {active && <JamdaniMark size={11} className="absolute -top-1 left-1/2 -translate-x-1/2 text-accent" />}
+              {active && (
+                <JamdaniMark
+                  size={11}
+                  className="absolute -top-1 left-1/2 -translate-x-1/2 text-accent"
+                />
+              )}
               <t.icon />
               {t.key === 'list' && needs > 0 && (
                 <span className="absolute -right-3 -top-1 min-w-[18px] rounded-full bg-amber px-1 text-[10px] font-bold text-white">
@@ -67,14 +72,28 @@ export function MobileNav({
 
 function InboxIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
       <path d="M3 13l3-8h12l3 8M3 13v6a1 1 0 001 1h16a1 1 0 001-1v-6M3 13h5l1.5 2h5L16 13h5" />
     </svg>
   );
 }
 function ThreadIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
       <path d="M21 11.5a8.5 8.5 0 11-3.4-6.8L21 4l-1.2 3.4A8.5 8.5 0 0121 11.5z" />
       <path d="M8 11h.01M12 11h.01M16 11h.01" />
     </svg>
@@ -82,7 +101,14 @@ function ThreadIcon() {
 }
 function OrderIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
       <path d="M6 4l2 4h8l2-4M5 8h14l-1 12H6L5 8z" />
       <path d="M9 12v4M15 12v4" />
     </svg>

@@ -10,7 +10,9 @@ import { useEffect, useRef } from 'react';
  */
 export function usePoll(fn: () => void | Promise<void>, intervalMs: number, deps: unknown[] = []) {
   const fnRef = useRef(fn);
-  fnRef.current = fn;
+  useEffect(() => {
+    fnRef.current = fn;
+  }, [fn]);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,16 +46,4 @@ export function usePoll(fn: () => void | Promise<void>, intervalMs: number, deps
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [intervalMs, ...deps]);
-}
-
-/**
- * Returns the previous value of any prop. Handy for detecting "new messages
- * arrived" so we can auto-scroll.
- */
-export function usePrevious<T>(value: T): T | undefined {
-  const ref = useRef<T | undefined>(undefined);
-  useEffect(() => {
-    ref.current = value;
-  }, [value]);
-  return ref.current;
 }

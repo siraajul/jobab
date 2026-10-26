@@ -130,7 +130,8 @@ export function InboxClient({
 
       <main
         className={
-          'flex min-h-0 flex-col bg-bg ' + (mobileView === 'thread' ? 'flex' : 'hidden xl:flex')
+          'flex min-h-0 min-w-0 flex-col bg-bg ' +
+          (mobileView === 'thread' ? 'flex' : 'hidden xl:flex')
         }
       >
         {state.active ? (

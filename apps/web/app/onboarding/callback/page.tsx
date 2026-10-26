@@ -8,13 +8,13 @@ import { redirect } from 'next/navigation';
  *
  * Kept as a server component so the redirect is instant — no client JS runs.
  */
-export default function OnboardingCallback({
+export default async function OnboardingCallback({
   searchParams,
 }: {
-  searchParams: Record<string, string | string[] | undefined>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = new URLSearchParams();
-  for (const [k, v] of Object.entries(searchParams)) {
+  for (const [k, v] of Object.entries(await searchParams)) {
     if (typeof v === 'string') params.set(k, v);
     else if (Array.isArray(v) && v[0]) params.set(k, v[0]);
   }

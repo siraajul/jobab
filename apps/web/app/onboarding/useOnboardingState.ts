@@ -23,7 +23,7 @@ export function useOnboardingState(initial: OnboardingStatus | null) {
   const router = useRouter();
   const toast = useToast();
   const [status, setStatus] = useState(initial);
-  const [step, setStep] = useState<StepKey>('shop');
+  const [selectedStep, setStep] = useState<StepKey>('shop');
 
   // Form state for every step. Kept together so the hook returns one object
   // the orchestrator can spread into props.
@@ -42,15 +42,15 @@ export function useOnboardingState(initial: OnboardingStatus | null) {
   // step state on every status refresh.
   const [touched, setTouched] = useState(false);
 
-  // Resume the wizard at the earliest unfinished step, but only until the user
-  // first interacts. After that, manual navigation wins.
-  useEffect(() => {
-    if (!status || touched) return;
-    if (!status.pageConnected) setStep('shop');
-    else if (!status.catalogLoaded) setStep('catalog');
-    else if (!status.aiInstructionsSet) setStep('ai');
-    else setStep('test');
-  }, [status, touched]);
+  // Resume from server status until the merchant chooses a step.
+  const suggestedStep: StepKey = !status?.pageConnected
+    ? 'shop'
+    : !status.catalogLoaded
+      ? 'catalog'
+      : !status.aiInstructionsSet
+        ? 'ai'
+        : 'test';
+  const step = touched ? selectedStep : suggestedStep;
 
   // Auto-redirect home when the merchant lands on 'done'.
   useEffect(() => {

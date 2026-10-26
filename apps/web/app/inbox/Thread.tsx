@@ -6,7 +6,7 @@ import { MessageBubble } from '@/components/inbox/MessageBubble';
 import { TagBar } from '@/components/inbox/TagBar';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { JamdaniMark } from '@/components/shared/Jamdani';
-import { usePrevious } from '@/lib/hooks/use-poll';
+import { useNow } from '@/lib/hooks/use-now';
 import type { MemberRow } from '@/lib/api';
 import type { ConversationDetail, ConversationTag, Tag } from '@/lib/types';
 import { HandoffBanner } from './HandoffBanner';
@@ -56,24 +56,28 @@ export function Thread({
   const [customerView, setCustomerView] = useState(false);
   // Auto-scroll to the bottom when new messages arrive; snap when switching.
   const messagesRef = useRef<HTMLDivElement | null>(null);
-  const lastLen = usePrevious(active.messages.length);
+  const previous = useRef<{ id: string; length: number } | null>(null);
+  const now = useNow();
   useEffect(() => {
     const el = messagesRef.current;
     if (!el) return;
-    if (lastLen !== undefined && active.messages.length > lastLen) {
+    const last = previous.current;
+    previous.current = { id: active.id, length: active.messages.length };
+    if (last?.id === active.id && active.messages.length > last.length) {
       el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     } else {
       el.scrollTop = el.scrollHeight;
     }
-  }, [active.id, active.messages.length, lastLen]);
+  }, [active.id, active.messages.length]);
 
   // Pulse "AI thinking" while the most-recent message is from the customer
   // and less than 8s old (heuristic — the worker typically replies in ~2s).
   const lastMsg = active.messages[active.messages.length - 1];
   const thinking =
+    now > 0 &&
     active.status === 'bot' &&
     lastMsg?.sender === 'customer' &&
-    Date.now() - new Date(lastMsg.createdAt).getTime() < 8000;
+    now - new Date(lastMsg.createdAt).getTime() < 8000;
 
   // "Customer view" filters out merchant-side context lines like
   // [from comment on post …] that the customer would never see.
@@ -124,6 +128,7 @@ export function Thread({
               <MessageBubble
                 key={m.id}
                 sender={m.sender}
+                deliveryStatus={customerView ? undefined : m.deliveryStatus}
                 attachments={m.attachments}
                 onPickCandidate={onPickCandidate}
               >

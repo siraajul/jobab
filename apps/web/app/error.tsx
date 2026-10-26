@@ -16,14 +16,15 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // eslint-disable-next-line no-console
     console.error('[jobab] route error', error);
   }, [error]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg px-6">
       <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-7 shadow-lg">
-        <div className="font-display text-[26px] font-bold tracking-display">Something broke<span className="text-accent">.</span></div>
+        <div className="font-display text-[26px] font-bold tracking-display">
+          Something broke<span className="text-accent">.</span>
+        </div>
         <p className="mt-3 text-[13.5px] text-ink-2">
           {error.message || 'An unexpected error happened on this page.'}
         </p>

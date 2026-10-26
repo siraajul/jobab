@@ -32,7 +32,10 @@ export function AvatarMenu() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    api.me().then(setUser).catch(() => undefined);
+    api
+      .me()
+      .then(setUser)
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -78,7 +81,9 @@ export function AvatarMenu() {
           className="absolute right-0 z-[55] mt-2 w-64 overflow-hidden rounded-xl border border-border-2 bg-surface shadow-md"
         >
           <div className="border-b border-border px-4 py-3">
-            <div className="truncate font-display text-[15px] font-semibold tracking-display">{name}</div>
+            <div className="truncate font-display text-[15px] font-semibold tracking-display">
+              {name}
+            </div>
             <div className="truncate text-[12px] text-ink-2">{user.email}</div>
             <div className="mt-1 inline-block rounded-full bg-accent-soft px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.14em] text-accent-ink">
               {role}
@@ -98,6 +103,20 @@ export function AvatarMenu() {
           >
             Onboarding
           </Link>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await api.revokeSessions();
+                router.replace('/login');
+              } catch {
+                window.alert('Could not revoke sessions. Try again.');
+              }
+            }}
+            className="block w-full px-4 py-2.5 text-left text-sm text-ink hover:bg-surface-2"
+          >
+            Sign out all devices
+          </button>
           <button
             type="button"
             onClick={async () => {

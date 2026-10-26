@@ -91,7 +91,9 @@ export function OrderPanel({
                     }}
                   />
                   <div className="flex min-w-0 flex-1 flex-col">
-                    <div className="truncate text-[14.5px] font-semibold leading-tight">{meta.title}</div>
+                    <div className="truncate text-[14.5px] font-semibold leading-tight">
+                      {meta.title}
+                    </div>
                     <div className="truncate text-[12.5px] text-ink-2">{meta.variant}</div>
                     <div className="mt-1 text-[11.5px] text-ink-3">
                       {it.qty} × ৳{it.price.toLocaleString()}
@@ -131,7 +133,11 @@ export function OrderPanel({
             </div>
             <dl className="mt-2 grid grid-cols-[64px_1fr] gap-y-1.5 text-[13.5px]">
               <ReceiptRow label="Name" value={conversation.customerName} missing={missing.name} />
-              <ReceiptRow label="Phone" value={conversation.customerPhone} missing={missing.phone} />
+              <ReceiptRow
+                label="Phone"
+                value={conversation.customerPhone}
+                missing={missing.phone}
+              />
               <ReceiptRow
                 label="Address"
                 value={conversation.customerAddress}
@@ -186,12 +192,7 @@ function ReceiptRow({
   return (
     <>
       <dt className="text-[10.5px] font-bold uppercase tracking-wider text-ink-3">{label}</dt>
-      <dd
-        className={cn(
-          'text-[13.5px]',
-          missing ? 'font-semibold text-amber' : 'text-ink',
-        )}
-      >
+      <dd className={cn('text-[13.5px]', missing ? 'font-semibold text-amber' : 'text-ink')}>
         {value?.trim() ? value : `— missing ${label.toLowerCase()}`}
       </dd>
     </>

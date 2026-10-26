@@ -6,13 +6,7 @@
 import { cn } from '@/lib/cn';
 
 /** Small stamped motif — used at panel corners, in the AI marker, etc. */
-export function JamdaniMark({
-  size = 14,
-  className,
-}: {
-  size?: number;
-  className?: string;
-}) {
+export function JamdaniMark({ size = 14, className }: { size?: number; className?: string }) {
   return (
     <svg
       width={size}
@@ -40,12 +34,7 @@ export function JamdaniStrip({ className }: { className?: string }) {
     >
       <defs>
         <pattern id="jb-jamdani" width="18" height="22" patternUnits="userSpaceOnUse">
-          <path
-            d="M9 2 L14 11 L9 20 L4 11 Z"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="0.9"
-          />
+          <path d="M9 2 L14 11 L9 20 L4 11 Z" fill="none" stroke="currentColor" strokeWidth="0.9" />
           <circle cx="9" cy="11" r="0.9" fill="currentColor" />
         </pattern>
       </defs>
@@ -65,12 +54,7 @@ export function JamdaniBand({ className }: { className?: string }) {
     >
       <defs>
         <pattern id="jb-band" width="20" height="12" patternUnits="userSpaceOnUse">
-          <path
-            d="M10 1 L18 6 L10 11 L2 6 Z"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="0.7"
-          />
+          <path d="M10 1 L18 6 L10 11 L2 6 Z" fill="none" stroke="currentColor" strokeWidth="0.7" />
           <circle cx="10" cy="6" r="0.7" fill="currentColor" />
         </pattern>
       </defs>
@@ -92,10 +76,7 @@ export function PerforatedEdge({
     <svg
       viewBox="0 0 200 10"
       preserveAspectRatio="none"
-      className={cn(
-        'block h-2.5 w-full',
-        direction === 'top' ? 'rotate-180' : '',
-      )}
+      className={cn('block h-2.5 w-full', direction === 'top' ? 'rotate-180' : '')}
       aria-hidden
     >
       <path

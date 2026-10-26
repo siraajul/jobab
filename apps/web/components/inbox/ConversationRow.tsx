@@ -1,5 +1,6 @@
 'use client';
 
+import { useNow } from '@/lib/hooks/use-now';
 import { cn } from '@/lib/cn';
 import type { ConversationListItem } from '@/lib/types';
 import { Avatar } from '@/components/shared/Avatar';
@@ -32,16 +33,19 @@ export function ConversationRow({
   assigneeName?: string | null;
   onClick: () => void;
 }) {
+  const now = useNow();
   const isNeedsHuman = conversation.status === 'needs_human';
-  const ageMs = conversation.lastCustomerMessageAt
-    ? Date.now() - new Date(conversation.lastCustomerMessageAt).getTime()
-    : 0;
+  const ageMs =
+    now > 0 && conversation.lastCustomerMessageAt
+      ? now - new Date(conversation.lastCustomerMessageAt).getTime()
+      : 0;
   const urgency = urgencyClass(conversation.status, ageMs);
   const last = conversation.messages[0];
   const snippet = last?.content ?? '';
-  const when = conversation.lastCustomerMessageAt
-    ? relativeTime(new Date(conversation.lastCustomerMessageAt))
-    : '';
+  const when =
+    now > 0 && conversation.lastCustomerMessageAt
+      ? relativeTime(new Date(conversation.lastCustomerMessageAt), now)
+      : '';
   const name = conversation.customerName ?? conversation.externalUserId;
   const tags = conversation.tags ?? [];
   const isComplaint = isProblemCategory(conversation.handoffCategory);
@@ -78,7 +82,15 @@ export function ConversationRow({
         <div className="truncate text-[13px] text-ink-2">{snippet}</div>
         {isComplaint && (
           <div className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-red-bg px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wider text-red">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              aria-hidden
+            >
               <path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
             </svg>
             {handoffLabel(conversation.handoffCategory)}
@@ -106,15 +118,23 @@ export function ConversationRow({
 
 function PersonIcon() {
   return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden>
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      aria-hidden
+    >
       <circle cx="12" cy="8" r="3.5" />
       <path d="M5 20a7 7 0 0 1 14 0" />
     </svg>
   );
 }
 
-function relativeTime(d: Date): string {
-  const seconds = Math.floor((Date.now() - d.getTime()) / 1000);
+function relativeTime(d: Date, now: number): string {
+  const seconds = Math.max(0, Math.floor((now - d.getTime()) / 1000));
   if (seconds < 60) return `${seconds}s`;
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m`;

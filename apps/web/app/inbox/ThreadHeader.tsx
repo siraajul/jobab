@@ -40,7 +40,7 @@ export function ThreadHeader({
 }) {
   return (
     <>
-      <div className="flex items-center gap-2 border-b border-border bg-surface px-3 py-3 sm:gap-3 sm:px-6 sm:py-3.5">
+      <div className="flex flex-wrap items-center gap-2 border-b border-border bg-surface px-3 py-3 sm:gap-3 sm:px-6 sm:py-3.5">
         <button
           type="button"
           onClick={onBack}

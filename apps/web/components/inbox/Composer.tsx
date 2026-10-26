@@ -78,6 +78,7 @@ export function Composer({
       )}
       <div className="flex items-end gap-2.5 rounded-[22px] border border-border-2 bg-surface-2 py-2 pl-4 pr-2">
         <textarea
+          aria-label="Reply"
           ref={ref}
           rows={1}
           value={value}
@@ -115,7 +116,15 @@ function SendIcon() {
 }
 function Spinner() {
   return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" className="animate-spin">
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      className="animate-spin"
+    >
       <circle cx="12" cy="12" r="9" opacity="0.25" />
       <path d="M21 12a9 9 0 00-9-9" />
     </svg>

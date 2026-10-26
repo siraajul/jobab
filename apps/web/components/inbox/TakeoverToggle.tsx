@@ -19,6 +19,7 @@ export function TakeoverToggle({
       <button
         type="button"
         onClick={onHandBack}
+        aria-pressed={aiOn}
         className={cn(
           'min-h-[34px] rounded-full px-4 py-1.5 text-[12.5px] font-semibold transition-colors',
           aiOn ? 'bg-surface text-accent-ink shadow-sm' : 'text-ink-2',
@@ -29,6 +30,7 @@ export function TakeoverToggle({
       <button
         type="button"
         onClick={onTakeOver}
+        aria-pressed={youOn}
         className={cn(
           'min-h-[34px] rounded-full px-4 py-1.5 text-[12.5px] font-semibold transition-colors',
           youOn ? 'bg-surface text-you shadow-sm' : 'text-ink-2',

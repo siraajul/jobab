@@ -33,9 +33,25 @@ export function MembersSection({ currentRole }: { currentRole: Role }) {
     }
   };
   useEffect(() => {
-    refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    let cancelled = false;
+    void api
+      .listMembers()
+      .then((rows) => {
+        if (!cancelled) setMembers(rows);
+      })
+      .catch(() => {});
+    if (canManage) {
+      void api
+        .listInvites()
+        .then((rows) => {
+          if (!cancelled) setInvites(rows);
+        })
+        .catch(() => {});
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [canManage]);
 
   return (
     <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
@@ -196,9 +212,10 @@ function InviteForm({ onCreated }: { onCreated: (token: string) => void }) {
 
 function InviteLinkPreview({ token }: { token: string }) {
   const toast = useToast();
-  const url = typeof window === 'undefined'
-    ? `/accept-invite?token=${token}`
-    : `${window.location.origin}/accept-invite?token=${token}`;
+  const url =
+    typeof window === 'undefined'
+      ? `/accept-invite?token=${token}`
+      : `${window.location.origin}/accept-invite?token=${token}`;
   return (
     <div className="mt-4 rounded-xl border border-dashed border-accent bg-accent-soft p-3 text-[13px]">
       <div className="mb-1 text-[10.5px] font-bold uppercase tracking-[0.18em] text-accent-ink">
@@ -225,9 +242,7 @@ function InviteLinkPreview({ token }: { token: string }) {
           Share on WhatsApp
         </a>
       </div>
-      <div className="mt-2 text-[11px] text-ink-2">
-        Expires in 7 days. We only show it once.
-      </div>
+      <div className="mt-2 text-[11px] text-ink-2">Expires in 7 days. We only show it once.</div>
     </div>
   );
 }
@@ -239,7 +254,12 @@ function RoleChip({ role }: { role: Role }) {
     agent: 'bg-surface-2 text-ink-2',
   };
   return (
-    <span className={cn('rounded-full px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.14em]', styles[role])}>
+    <span
+      className={cn(
+        'rounded-full px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.14em]',
+        styles[role],
+      )}
+    >
       {role}
     </span>
   );

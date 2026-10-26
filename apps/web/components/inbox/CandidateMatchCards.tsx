@@ -41,8 +41,15 @@ export function CandidateMatchCards({
               className="aspect-square w-full"
               style={
                 c.image_url
-                  ? { backgroundImage: `url(${c.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-                  : { background: 'repeating-linear-gradient(45deg, var(--surface-2) 0 9px, var(--surface-3) 9px 18px)' }
+                  ? {
+                      backgroundImage: `url(${c.image_url})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }
+                  : {
+                      background:
+                        'repeating-linear-gradient(45deg, var(--surface-2) 0 9px, var(--surface-3) 9px 18px)',
+                    }
               }
             />
             <div className="px-2.5 py-2">

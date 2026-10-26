@@ -10,7 +10,7 @@ import { NextResponse, type NextRequest } from 'next/server';
  */
 const PUBLIC_PREFIXES = ['/login', '/sign-up', '/accept-invite', '/api/backend'];
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
     return NextResponse.next();

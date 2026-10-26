@@ -7,13 +7,7 @@ import { api } from '@/lib/api';
 import type { OrderListItem } from '@/lib/types';
 
 export type Filter =
-  | 'all'
-  | 'created'
-  | 'confirmed'
-  | 'paid'
-  | 'shipped'
-  | 'delivered'
-  | 'cancelled';
+  'all' | 'created' | 'confirmed' | 'paid' | 'shipped' | 'delivered' | 'cancelled';
 export type OrderStatus = 'created' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface ShopInfo {

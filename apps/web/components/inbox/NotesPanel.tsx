@@ -9,6 +9,10 @@ import { Skeleton } from '@/components/shared/Skeleton';
 /** Internal notes on a conversation — add, list, delete. Mounts inside a
  *  collapsed Section, so the fetch defers until the merchant opens it. */
 export function NotesPanel({ conversationId }: { conversationId: string }) {
+  return <NotesPanelContent key={conversationId} conversationId={conversationId} />;
+}
+
+function NotesPanelContent({ conversationId }: { conversationId: string }) {
   const toast = useToast();
   const [notes, setNotes] = useState<Note[] | null>(null);
   const [draft, setDraft] = useState('');
@@ -16,7 +20,6 @@ export function NotesPanel({ conversationId }: { conversationId: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    setNotes(null);
     api
       .conversationNotes(conversationId)
       .then((rows) => !cancelled && setNotes(rows))
@@ -82,7 +85,9 @@ export function NotesPanel({ conversationId }: { conversationId: string }) {
             <Skeleton className="h-12 w-full rounded-lg" />
           </>
         ) : notes.length === 0 ? (
-          <p className="text-[13px] text-ink-3">No notes yet. Jot down anything the team should know.</p>
+          <p className="text-[13px] text-ink-3">
+            No notes yet. Jot down anything the team should know.
+          </p>
         ) : (
           notes.map((n) => (
             <div key={n.id} className="group rounded-lg border border-border bg-surface p-2.5">

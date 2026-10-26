@@ -42,8 +42,7 @@ export function SettingsClient() {
     return <AppShell title="Settings">Loading…</AppShell>;
   }
 
-  const myRole: Role =
-    me.memberships.find((m) => m.organizationId === data.id)?.role ?? 'agent';
+  const myRole: Role = me.memberships.find((m) => m.organizationId === data.id)?.role ?? 'agent';
   const canEdit = myRole === 'owner' || myRole === 'admin';
   const dirty = name !== data.name || instructions !== data.aiInstructions;
 
@@ -103,11 +102,13 @@ export function SettingsClient() {
             </div>
           </div>
           <p className="mt-1 text-[13px] text-ink-2">
-            Tell the AI about your tone, delivery rates, payment preferences, return policy — anything that should
-            shape replies. Bangla, Banglish, English all OK.
+            Tell the AI about your tone, delivery rates, payment preferences, return policy —
+            anything that should shape replies. Bangla, Banglish, English all OK.
           </p>
           <label className="mt-5 block">
-            <span className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-3">Shop name</span>
+            <span className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-3">
+              Shop name
+            </span>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -116,7 +117,9 @@ export function SettingsClient() {
             />
           </label>
           <label className="mt-4 block">
-            <span className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-3">Instructions</span>
+            <span className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-3">
+              Instructions
+            </span>
             <textarea
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
@@ -127,8 +130,17 @@ export function SettingsClient() {
             />
           </label>
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-            <span className={cn('text-[11px] uppercase tracking-[0.18em]', dirty ? 'text-amber' : 'text-ink-3')}>
-              {!canEdit ? 'agents can read; admins/owners can edit' : dirty ? 'unsaved changes' : 'up to date'}
+            <span
+              className={cn(
+                'text-[11px] uppercase tracking-[0.18em]',
+                dirty ? 'text-amber' : 'text-ink-3',
+              )}
+            >
+              {!canEdit
+                ? 'agents can read; admins/owners can edit'
+                : dirty
+                  ? 'unsaved changes'
+                  : 'up to date'}
             </span>
             {canEdit && (
               <div className="flex gap-2">

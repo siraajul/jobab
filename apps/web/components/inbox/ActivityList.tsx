@@ -19,13 +19,15 @@ const TOOL_LABELS: Record<string, string> = {
 /** The AI activity feed for a conversation — one entry per agent run, listing
  *  which tools fired plus token/latency cost. Sourced from `/activity`. */
 export function ActivityList({ conversationId }: { conversationId: string }) {
+  return <ActivityListContent key={conversationId} conversationId={conversationId} />;
+}
+
+function ActivityListContent({ conversationId }: { conversationId: string }) {
   const [items, setItems] = useState<ConversationActivityItem[] | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    setItems(null);
-    setError(false);
     api
       .conversationActivity(conversationId)
       .then((rows) => {
@@ -40,7 +42,11 @@ export function ActivityList({ conversationId }: { conversationId: string }) {
   }, [conversationId]);
 
   if (error) {
-    return <p className="px-5 pb-2 text-[13px] text-ink-3">Couldn’t load activity — reopen the conversation.</p>;
+    return (
+      <p className="px-5 pb-2 text-[13px] text-ink-3">
+        Couldn’t load activity — reopen the conversation.
+      </p>
+    );
   }
   if (items === null) {
     return (
@@ -81,10 +87,7 @@ export function ActivityList({ conversationId }: { conversationId: string }) {
                 {tools.length > 0 && (
                   <ul className="mt-2 space-y-1">
                     {tools.map((t, i) => (
-                      <li
-                        key={i}
-                        className="flex items-center gap-1.5 text-[12.5px] text-ink-2"
-                      >
+                      <li key={i} className="flex items-center gap-1.5 text-[12.5px] text-ink-2">
                         <span
                           className={
                             'h-1.5 w-1.5 shrink-0 rounded-full ' +
@@ -103,9 +106,7 @@ export function ActivityList({ conversationId }: { conversationId: string }) {
                 )}
                 <div className="mt-2 flex items-center gap-3 text-[10.5px] uppercase tracking-wider text-ink-3">
                   <span className="truncate">{run.model}</span>
-                  <span className="tabular-nums">
-                    {run.inputTokens + run.outputTokens} tok
-                  </span>
+                  <span className="tabular-nums">{run.inputTokens + run.outputTokens} tok</span>
                   {cost > 0 && <span className="tabular-nums">${cost.toFixed(4)}</span>}
                   {run.latencyMs > 0 && (
                     <span className="tabular-nums">{(run.latencyMs / 1000).toFixed(1)}s</span>

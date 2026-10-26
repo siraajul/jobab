@@ -17,35 +17,37 @@ export default function AcceptInvitePage() {
   const router = useRouter();
   const params = useSearchParams();
   const [token, setToken] = useState(params.get('token') ?? '');
-  const [preview, setPreview] = useState<Preview | null>(null);
-  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [inspection, setInspection] = useState<{
+    token: string;
+    preview: Preview | null;
+    error: string | null;
+  } | null>(null);
+  const preview = inspection?.token === token.trim() ? inspection.preview : null;
+  const previewError = inspection?.token === token.trim() ? inspection.error : null;
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token.trim()) {
-      setPreview(null);
-      setPreviewError(null);
-      return;
-    }
+    if (!token.trim()) return;
     let cancelled = false;
     (async () => {
       try {
         const p = await api.inspectInvite(token.trim());
         if (!cancelled) {
-          setPreview(p);
-          setPreviewError(null);
+          setInspection({ token: token.trim(), preview: p, error: null });
         }
       } catch (err) {
         if (!cancelled) {
-          setPreview(null);
-          setPreviewError(
-            err instanceof ApiError && err.status === 400
-              ? 'This invite has expired or already been used.'
-              : "Couldn't load this invite.",
-          );
+          setInspection({
+            token: token.trim(),
+            preview: null,
+            error:
+              err instanceof ApiError && err.status === 400
+                ? 'This invite has expired or already been used.'
+                : "Couldn't load this invite.",
+          });
         }
       }
     })();
@@ -75,12 +77,17 @@ export default function AcceptInvitePage() {
 
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-bg px-4 py-8 sm:px-6">
-      <form onSubmit={submit} className="w-full max-w-md overflow-hidden rounded-[20px] bg-surface shadow-lg">
+      <form
+        onSubmit={submit}
+        className="w-full max-w-md overflow-hidden rounded-[20px] bg-surface shadow-lg"
+      >
         <div className="flex flex-col items-center gap-3 px-7 pt-8">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-white shadow-md">
             <JamdaniMark size={20} />
           </div>
-          <div className="font-display text-[22px] font-bold leading-none tracking-display">Join the team</div>
+          <div className="font-display text-[22px] font-bold leading-none tracking-display">
+            Join the team
+          </div>
         </div>
         <div className="px-7">
           <JamdaniBand className="mt-5 h-2 text-accent" />
@@ -134,7 +141,11 @@ export default function AcceptInvitePage() {
             disabled={busy || !token || !name || password.length < 8 || !preview}
             className="rounded-xl bg-accent px-4 py-3 font-display text-[15px] font-semibold text-white shadow-md transition hover:brightness-105 disabled:opacity-50"
           >
-            {busy ? 'Creating account…' : preview ? `Join ${preview.organizationName}` : 'Verify invite first'}
+            {busy
+              ? 'Creating account…'
+              : preview
+                ? `Join ${preview.organizationName}`
+                : 'Verify invite first'}
           </button>
         </div>
       </form>

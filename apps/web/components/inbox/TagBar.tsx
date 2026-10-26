@@ -29,9 +29,7 @@ export function TagBar({
 
   const applied = new Set(tags.map((t) => t.id));
   const q = query.trim().toLowerCase();
-  const candidates = palette.filter(
-    (t) => !applied.has(t.id) && t.name.toLowerCase().includes(q),
-  );
+  const candidates = palette.filter((t) => !applied.has(t.id) && t.name.toLowerCase().includes(q));
   const exactExists = palette.some((t) => t.name.toLowerCase() === q);
   const canCreate = q.length > 0 && !exactExists;
 
@@ -54,7 +52,15 @@ export function TagBar({
           aria-expanded={open}
           className="inline-flex items-center gap-1 rounded-full border border-dashed border-border-2 px-2 py-0.5 text-[11px] font-semibold text-ink-2 transition hover:bg-surface-2"
         >
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            aria-hidden
+          >
             <path d="M12 5v14M5 12h14" />
           </svg>
           Tag

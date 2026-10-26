@@ -17,10 +17,14 @@ export default function InboxPage() {
         setConversations(list);
         const slice = list.slice(0, 8);
         const threadEntries = await Promise.all(
-          slice.map(async (c) => [c.id, await api.getConversation(c.id).catch(() => null)] as const),
+          slice.map(
+            async (c) => [c.id, await api.getConversation(c.id).catch(() => null)] as const,
+          ),
         );
         const orderEntries = await Promise.all(
-          slice.map(async (c) => [c.id, await api.orderForConversation(c.id).catch(() => null)] as const),
+          slice.map(
+            async (c) => [c.id, await api.orderForConversation(c.id).catch(() => null)] as const,
+          ),
         );
         setThreads(
           Object.fromEntries(
