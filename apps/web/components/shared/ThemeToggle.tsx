@@ -1,28 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { cn } from '@/lib/cn';
+import { getServerThemeSnapshot, getThemeSnapshot, setTheme, subscribeToTheme } from '@/lib/theme';
 
 /**
- * Toggles between theme-light / theme-dark on <body>. Persists to localStorage
+ * Toggles between theme-light / theme-dark on <html>. Persists to localStorage
  * so the choice survives reloads.
  */
 export function ThemeToggle({ className }: { className?: string }) {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-
-  useEffect(() => {
-    const saved = (localStorage.getItem('jobab-theme') as 'light' | 'dark' | null) ?? 'light';
-    setTheme(saved);
-    document.body.classList.remove('theme-light', 'theme-dark');
-    document.body.classList.add(`theme-${saved}`);
-  }, []);
-
+  const theme = useSyncExternalStore(subscribeToTheme, getThemeSnapshot, getServerThemeSnapshot);
   const swap = () => {
     const next = theme === 'light' ? 'dark' : 'light';
     setTheme(next);
-    localStorage.setItem('jobab-theme', next);
-    document.body.classList.remove('theme-light', 'theme-dark');
-    document.body.classList.add(`theme-${next}`);
   };
 
   return (
@@ -43,7 +33,14 @@ export function ThemeToggle({ className }: { className?: string }) {
 
 function Sun() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
       <circle cx="12" cy="12" r="4" />
       <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
     </svg>

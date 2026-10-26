@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { ToastProvider } from '@/components/shared/Toast';
 import { ConnectivityBanner } from '@/components/shared/ConnectivityBanner';
+import { THEME_BOOT_SCRIPT } from '@/lib/theme';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -15,13 +16,9 @@ export const viewport: Viewport = {
   themeColor: '#FAF7F2',
 };
 
-// Tiny inline script that applies the saved theme before paint, so dark mode
-// users don't see a light flash.
-const THEME_BOOT_SCRIPT = `(function(){try{var t=localStorage.getItem('jobab-theme')||'light';document.body.classList.add('theme-'+t);}catch(e){document.body.classList.add('theme-light');}})();`;
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className="theme-light" suppressHydrationWarning>
       <body className="min-h-screen overscroll-none">
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
         <ToastProvider>
