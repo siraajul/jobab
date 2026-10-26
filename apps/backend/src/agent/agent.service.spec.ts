@@ -36,8 +36,9 @@ function makePrisma(over: Record<string, unknown> = {}) {
     },
     agentRun: { create: jest.fn(async () => ({})) },
     product: { findMany: jest.fn(async () => []) },
+    order: { findFirst: jest.fn(async () => null) },
     ...over,
-  } as never;
+  };
 }
 
 function makeService(deps: Partial<Record<string, unknown>> = {}) {
@@ -72,7 +73,7 @@ function makeService(deps: Partial<Record<string, unknown>> = {}) {
     endTrace: jest.fn(),
   };
   const service = new AgentService(
-    prisma,
+    prisma as never,
     {} as never, // catalog
     messenger as never,
     {} as never, // guardrail
@@ -87,6 +88,50 @@ function makeService(deps: Partial<Record<string, unknown>> = {}) {
 }
 
 describe('AgentService.handleMessage', () => {
+  it('uses the latest 40 messages chronologically and retains saved customer/order facts', async () => {
+    const rows = Array.from({ length: 45 }, (_, index) => ({
+      id: `m${index}`,
+      sender: 'customer',
+      content: `message ${index}`,
+      attachments: null,
+      createdAt: new Date(index * 1000),
+    }));
+    const prisma = makePrisma({
+      conversation: {
+        findUniqueOrThrow: jest.fn(async () => ({
+          id: 'c1',
+          organizationId: 'org1',
+          status: 'bot',
+          organization: { aiInstructions: null },
+          customerName: 'Tahmina',
+          customerPhone: '01700000000',
+          customerAddress: 'Dhaka',
+        })),
+      },
+      message: {
+        findMany: jest.fn(async ({ orderBy, take }) => {
+          const sorted = [...rows].sort((a, b) =>
+            orderBy[0].createdAt === 'desc'
+              ? b.createdAt.getTime() - a.createdAt.getTime()
+              : a.createdAt.getTime() - b.createdAt.getTime(),
+          );
+          return sorted.slice(0, take);
+        }),
+      },
+      order: { findFirst: jest.fn(async () => ({ id: 'order1', status: 'created' })) },
+    });
+    const { service, llm } = makeService({ prisma });
+    await service.handleMessage('c1', 'm44');
+    const { messages } = (llm.call as AnyFn).mock.calls[0][0];
+    expect(
+      messages
+        .filter((m: { role: string }) => m.role === 'user')
+        .map((m: { content: string }) => m.content),
+    ).toEqual(rows.slice(5).map((row) => row.content));
+    expect(messages[1].content).toContain('Tahmina');
+    expect(messages[1].content).toContain('order1');
+  });
+
   it('bails early when the conversation is human (merchant takeover)', async () => {
     const prisma = makePrisma({
       conversation: {

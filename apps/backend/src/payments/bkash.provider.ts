@@ -24,7 +24,7 @@ export class BkashProvider implements PaymentProvider {
     const password = this.config.get<string>('BKASH_PASSWORD');
     const appKey = this.config.get<string>('BKASH_APP_KEY');
     const appSecret = this.config.get<string>('BKASH_APP_SECRET');
-    const sandbox = this.config.get<string>('BKASH_SANDBOX') !== '0';
+    const sandbox = this.config.get<boolean>('BKASH_SANDBOX') ?? true;
 
     if (!username || !password || !appKey || !appSecret) {
       // Dev fallback — log once and return a placeholder URL so the order
@@ -73,7 +73,8 @@ export class BkashProvider implements PaymentProvider {
         merchantInvoiceNumber: req.orderId,
       }),
     });
-    if (!createRes.ok) throw new Error(`bKash create: ${createRes.status} ${await createRes.text()}`);
+    if (!createRes.ok)
+      throw new Error(`bKash create: ${createRes.status} ${await createRes.text()}`);
     const createJson = (await createRes.json()) as { bkashURL?: string; paymentID?: string };
     if (!createJson.bkashURL) throw new Error('bKash create: missing bkashURL');
 

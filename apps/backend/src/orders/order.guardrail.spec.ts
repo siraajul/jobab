@@ -1,4 +1,5 @@
 import { OrderGuardrail, CreateOrderResult } from './order.guardrail';
+import { Prisma } from '@prisma/client';
 
 /**
  * Unit tests for the guardrail logic — exercised against an in-memory fake
@@ -22,9 +23,13 @@ type Variant = {
   product: { organizationId: string; currency: string };
 };
 
-function makePrisma(opts: { conv: Conversation; variants: Variant[]; existingOrder?: { id: string } | null }) {
+function makePrisma(opts: {
+  conv: Conversation;
+  variants: Variant[];
+  existingOrder?: { id: string } | null;
+}) {
   const orders: any[] = [];
-  return {
+  const prisma = {
     conversation: {
       findFirstOrThrow: async ({ where }: any) => {
         if (where.id !== opts.conv.id) throw new Error('not found');
@@ -45,19 +50,22 @@ function makePrisma(opts: { conv: Conversation; variants: Variant[]; existingOrd
     },
     $transaction: async (fn: any) => {
       const tx = {
+        conversation: prisma.conversation,
         order: {
+          ...prisma.order,
           create: async ({ data }: any) => {
             const o = { ...data, id: 'order_test', total: data.total };
             orders.push(o);
             return o;
           },
         },
-        productVariant: { update: async () => undefined },
+        productVariant: { ...prisma.productVariant, update: async () => undefined },
       };
       return fn(tx);
     },
     _orders: orders,
   } as any;
+  return prisma;
 }
 
 const fakeBkash = {
@@ -80,6 +88,84 @@ describe('OrderGuardrail', () => {
     stockQty: 3,
     product: { organizationId: 'org1', currency: 'BDT' },
   };
+
+  it('retries a serialization conflict and creates only one order/payment link', async () => {
+    const prisma = makePrisma({ conv, variants: [variant] });
+    const transaction = prisma.$transaction;
+    prisma.$transaction = jest
+      .fn()
+      .mockRejectedValueOnce(
+        new Prisma.PrismaClientKnownRequestError('write conflict', {
+          code: 'P2034',
+          clientVersion: '5.22.0',
+        }),
+      )
+      .mockImplementation(transaction);
+    const payment = { createLink: jest.fn(fakeBkash.createLink) };
+    const guardrail = new OrderGuardrail(prisma, payment as any);
+    await expect(
+      guardrail.tryCreate({
+        organizationId: 'org1',
+        conversationId: 'c1',
+        proposedItems: [{ product_id: 'p1', variant_id: 'v1', qty: 1 }],
+      }),
+    ).resolves.toMatchObject({ ok: true });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+    expect(prisma.$transaction).toHaveBeenLastCalledWith(expect.any(Function), {
+      isolationLevel: 'Serializable',
+    });
+    expect(payment.createLink).toHaveBeenCalledTimes(1);
+    expect(prisma._orders).toHaveLength(1);
+  });
+
+  it('stops after five serialization attempts without invoking payments', async () => {
+    const prisma = makePrisma({ conv, variants: [variant] });
+    const conflict = new Prisma.PrismaClientKnownRequestError('write conflict', {
+      code: 'P2034',
+      clientVersion: '5.22.0',
+    });
+    prisma.$transaction = jest.fn().mockRejectedValue(conflict);
+    const payment = { createLink: jest.fn() };
+    const guardrail = new OrderGuardrail(prisma, payment as any);
+    await expect(
+      guardrail.tryCreate({
+        organizationId: 'org1',
+        conversationId: 'c1',
+        proposedItems: [{ product_id: 'p1', variant_id: 'v1', qty: 1 }],
+      }),
+    ).rejects.toBe(conflict);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(5);
+    expect(payment.createLink).not.toHaveBeenCalled();
+  });
+
+  it('checks combined quantities when the same variant appears twice', async () => {
+    const prisma = makePrisma({ conv, variants: [variant] });
+    const guardrail = new OrderGuardrail(prisma, fakeBkash);
+    await expect(
+      guardrail.tryCreate({
+        organizationId: 'org1',
+        conversationId: 'c1',
+        proposedItems: [
+          { product_id: 'p1', variant_id: 'v1', qty: 2 },
+          { product_id: 'p1', variant_id: 'v1', qty: 2 },
+        ],
+      }),
+    ).resolves.toMatchObject({ ok: false, error: 'out_of_stock' });
+    expect(prisma._orders).toHaveLength(0);
+  });
+
+  it.each([0, -1, 1.5, Number.NaN])('rejects invalid quantity %p', async (qty) => {
+    const prisma = makePrisma({ conv, variants: [variant] });
+    const guardrail = new OrderGuardrail(prisma, fakeBkash);
+    await expect(
+      guardrail.tryCreate({
+        organizationId: 'org1',
+        conversationId: 'c1',
+        proposedItems: [{ product_id: 'p1', variant_id: 'v1', qty }],
+      }),
+    ).rejects.toThrow(/quantity/);
+    expect(prisma._orders).toHaveLength(0);
+  });
 
   it('rejects when required customer fields are missing', async () => {
     const prisma = makePrisma({

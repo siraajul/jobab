@@ -15,7 +15,7 @@ import { z } from 'zod';
 import { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
 import { ApiBadRequest, ApiInlineOk, ApiZodBody } from '../swagger/decorators';
-import { verifyMetaSignature } from './meta-signature';
+import { verifyMetaSignature, verifyMetaSignedRequest } from './meta-signature';
 import { MetaWebhookService } from './meta-webhook.service';
 import type { MetaWebhookBody } from './meta-webhook.types';
 import { Public } from '../auth/auth.guard';
@@ -115,23 +115,14 @@ export class MetaController {
   })
   async dataDeletion(@Body() body: unknown) {
     const parsed = DataDeletionBody.parse(body);
-    const [, payloadB64] = parsed.signed_request.split('.');
-    let payload: { user_id?: string } = {};
-    try {
-      const json = Buffer.from(payloadB64 ?? '', 'base64url').toString('utf8');
-      payload = JSON.parse(json) as { user_id?: string };
-    } catch {
-      // fall through — we still return a confirmation so Meta marks it done
-    }
+    const secret = this.config.get<string>('META_APP_SECRET');
+    const payload = verifyMetaSignedRequest(parsed.signed_request, secret ?? '');
+    if (!payload) throw new ForbiddenException('invalid signed request');
 
-    const userId = payload.user_id ?? 'unknown';
+    const userId = payload.user_id;
     const confirmationCode = `del_${Date.now()}_${userId.slice(0, 16)}`;
 
-    await this.service
-      .scrubExternalUser(userId)
-      .catch((err: unknown) =>
-        this.log.error(`data-deletion purge failed for ${userId}: ${(err as Error).message}`),
-      );
+    await this.service.scrubExternalUser(userId);
 
     return {
       url: `${this.config.get<string>('PUBLIC_URL') ?? 'http://localhost:3000'}/data-deletion-status?code=${confirmationCode}`,

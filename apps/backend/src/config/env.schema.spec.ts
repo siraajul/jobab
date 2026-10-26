@@ -10,6 +10,27 @@ const minimal = {
 };
 
 describe('validateEnv', () => {
+  it.each([
+    ['true', true],
+    ['1', true],
+    ['false', false],
+    ['0', false],
+    [true, true],
+    [false, false],
+    [' FALSE ', false],
+  ])('parses boolean configuration %p as %p', (value, expected) => {
+    const env = validateEnv({ ...minimal, MESSENGER_DRY_RUN: value, BKASH_SANDBOX: value });
+    expect(env.MESSENGER_DRY_RUN).toBe(expected);
+    expect(env.BKASH_SANDBOX).toBe(expected);
+  });
+
+  it.each(['yes', '', 'disabled'])('rejects ambiguous boolean value %p', (value) => {
+    expect(() => validateEnv({ ...minimal, MESSENGER_DRY_RUN: value })).toThrow(
+      /MESSENGER_DRY_RUN/,
+    );
+    expect(() => validateEnv({ ...minimal, BKASH_SANDBOX: value })).toThrow(/BKASH_SANDBOX/);
+  });
+
   it('accepts a minimal valid env', () => {
     const env = validateEnv(minimal);
     expect(env.NODE_ENV).toBe('development');

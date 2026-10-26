@@ -1,5 +1,13 @@
 import { z } from 'zod';
 
+const envBoolean = z.preprocess((value) => {
+  if (typeof value !== 'string') return value;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'true' || normalized === '1') return true;
+  if (normalized === 'false' || normalized === '0') return false;
+  return value;
+}, z.boolean());
+
 /**
  * Zod schema validating *every* environment variable the backend reads.
  * Validated at boot in `ConfigModule.forRoot({ validate })`; mistyped or
@@ -25,7 +33,7 @@ export const EnvSchema = z
     // v20 is supported until Sept 24, 2026; v22 gives runway while staying
     // a stable, widely-deployed version. Override in env for upstream bumps.
     META_GRAPH_VERSION: z.string().default('v22.0'),
-    MESSENGER_DRY_RUN: z.coerce.boolean().default(true),
+    MESSENGER_DRY_RUN: envBoolean.default(true),
 
     // LLM (chat/tool-calling). `stub` is the in-memory deterministic provider
     // used in tests; it doesn't need an API key. See `agent/llm/stub.provider.ts`.
@@ -75,7 +83,7 @@ export const EnvSchema = z
     BKASH_PASSWORD: z.string().optional(),
     BKASH_APP_KEY: z.string().optional(),
     BKASH_APP_SECRET: z.string().optional(),
-    BKASH_SANDBOX: z.coerce.boolean().default(true),
+    BKASH_SANDBOX: envBoolean.default(true),
   })
   .superRefine((env, ctx) => {
     // LLM_API_KEY is required unless we're running the in-memory stub provider.

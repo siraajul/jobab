@@ -10,7 +10,7 @@ import { OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi';
 import { Logger as PinoLogger } from 'nestjs-pino';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import { json, raw, type NextFunction, type Request, type Response } from 'express';
+import { json, raw, urlencoded, type NextFunction, type Request, type Response } from 'express';
 import { AppModule } from './app.module';
 import { EnvService } from './config/env.service';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -35,6 +35,7 @@ async function bootstrap() {
     return next();
   });
   app.use(json({ limit: '1mb' }));
+  app.use('/webhooks/meta/data-deletion', urlencoded({ extended: false, limit: '16kb' }));
 
   const env = app.get(EnvService);
   app.enableCors({
