@@ -38,7 +38,7 @@ export const EnvSchema = z
     // LLM (chat/tool-calling). `stub` is the in-memory deterministic provider
     // used in tests; it doesn't need an API key. See `agent/llm/stub.provider.ts`.
     LLM_PROVIDER: z.enum(['groq', 'gemini', 'openai', 'stub']).default('groq'),
-    LLM_MODEL: z.string().default('llama-3.3-70b-versatile'),
+    LLM_MODEL: z.string().default('openai/gpt-oss-120b'),
     LLM_API_KEY: z.string().optional(),
     LLM_MAX_ITERATIONS: z.coerce.number().int().min(1).max(20).default(5),
     LLM_MAX_OUTPUT_TOKENS: z.coerce.number().int().min(64).max(4096).default(1024),

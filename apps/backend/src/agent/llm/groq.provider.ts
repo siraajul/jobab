@@ -9,14 +9,18 @@ import { LlmCallOptions, LlmCallResult, LlmProvider } from './provider';
 
 /**
  * Groq provider — uses Groq's OpenAI-compatible endpoint with the `openai`
- * SDK. Default model is `llama-3.3-70b-versatile` (good tool-calling, fast).
+ * SDK. Default model is `openai/gpt-oss-120b`, available on Groq's free tier.
  *
- * Bangla note: Llama 3.3 handles Bangla decently but is weaker than Gemini.
- * Re-evaluate against the eval set (spec §13) before customers rely on it.
+ * Evaluate Bangla replies against the merchant catalog before live use.
+ * Free-tier quotas are account-wide; these costs estimate paid list pricing.
  */
 
 const PRICING: Record<string, { input: number; output: number }> = {
-  // Published Groq list prices (per 1M tokens). Update on changes.
+  // Published Groq list prices, checked 2026-10-26 (USD per token).
+  // https://console.groq.com/docs/models — estimates, not the account's invoice.
+  'openai/gpt-oss-120b': { input: 0.15 / 1_000_000, output: 0.6 / 1_000_000 },
+  'openai/gpt-oss-20b': { input: 0.075 / 1_000_000, output: 0.3 / 1_000_000 },
+  'qwen/qwen3.8-27b': { input: 0.8 / 1_000_000, output: 4.0 / 1_000_000 },
   'llama-3.3-70b-versatile': { input: 0.59 / 1_000_000, output: 0.79 / 1_000_000 },
   'llama-3.1-70b-versatile': { input: 0.59 / 1_000_000, output: 0.79 / 1_000_000 },
   'llama-3.1-8b-instant': { input: 0.05 / 1_000_000, output: 0.08 / 1_000_000 },
