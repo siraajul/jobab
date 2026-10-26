@@ -1,6 +1,6 @@
 # What's Missing — Honest Inventory
 
-_Last updated: 2026-05-30_
+_Historical inventory: 2026-05-30. See [the 2026-10-26 production runbook](./ship/3-vps-operations.md) for current engineering gates and remaining external acceptance requirements._
 
 Grouped by **when it'll bite us**, not by category. Each line tells you who
 owns the fix and a rough effort estimate so you can prioritise. Things marked

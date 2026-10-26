@@ -1,11 +1,11 @@
 # Privacy Policy — Jobab
 
-*Last updated: [date]*
+_Last updated: [date]_
 
-**This is a working draft. Have a lawyer in the destination jurisdiction
+\*_This is a working draft. Have a lawyer in the destination jurisdiction
 review before you publish it publicly. Bangladesh's Digital Security Act,
 the upcoming Personal Data Protection Act, plus Meta's Platform Terms all
-apply.*
+apply._
 
 ## Who we are
 
@@ -19,6 +19,7 @@ Data Protection contact: privacy@jobab.com
 ## What data we collect
 
 ### From the merchant (our customer)
+
 - Account: name, email, password hash
 - Business profile: shop name, AI instructions, catalog products + variants
 - Connected Facebook Page identifiers and access tokens (encrypted at rest
@@ -26,6 +27,7 @@ Data Protection contact: privacy@jobab.com
 - Billing details (if applicable; processed by our payment provider)
 
 ### From the merchant's customers (your end users, NOT our customers)
+
 - The Messenger PSID (a per-page-per-user opaque id Meta provides)
 - Message contents the customer sends to the merchant's Page
 - Image attachments the customer sends, by URL (we do not re-host them)
@@ -37,6 +39,7 @@ Data Protection contact: privacy@jobab.com
 ## What we do with it
 
 We use the data to:
+
 - Reply to the customer on the merchant's behalf using AI models
 - Recognise the product the customer is asking about
 - Build the order and generate a payment link
@@ -50,6 +53,7 @@ listed below.
 ## Where the data goes
 
 Operational sub-processors:
+
 - **Groq** (LLM inference) — receives anonymised conversation context to
   generate replies. https://groq.com/privacy
 - **Jina AI** (embeddings) — receives product titles + descriptions and
@@ -81,6 +85,7 @@ pilot are **not** included.
 
 Even though you (the end customer chatting with the merchant) are not our
 direct customer, you have the right to:
+
 - Know what we hold about you
 - Request deletion
 - Object to processing

@@ -26,31 +26,32 @@ the end.
 
 22 hand-curated cases across 7 files (~73 expectations):
 
-| File | Cases | What it covers |
-|---|---|---|
-| `price.yaml` | 3 | Bangla / Banglish / mixed price asks |
-| `order.yaml` | 4 | Happy path, missing fields, fabrication, OOS |
-| `handoff.yaml` | 3 | Complaint, refund, "talk to human" |
-| `empty-catalog.yaml` | 2 | Unknown product, vague greeting |
-| `multilang.yaml` | 3 | Pure Bangla, pure English, code-switch |
-| `edge-cases.yaml` | 4 | Emoji-only, spam, long text, phone-only |
-| `comment-bridge.yaml` | 2 | Comment-to-DM with intent tag |
+| File                  | Cases | What it covers                               |
+| --------------------- | ----- | -------------------------------------------- |
+| `price.yaml`          | 3     | Bangla / Banglish / mixed price asks         |
+| `order.yaml`          | 4     | Happy path, missing fields, fabrication, OOS |
+| `handoff.yaml`        | 3     | Complaint, refund, "talk to human"           |
+| `empty-catalog.yaml`  | 2     | Unknown product, vague greeting              |
+| `multilang.yaml`      | 3     | Pure Bangla, pure English, code-switch       |
+| `edge-cases.yaml`     | 4     | Emoji-only, spam, long text, phone-only      |
+| `comment-bridge.yaml` | 2     | Comment-to-DM with intent tag                |
 
 ## Expectation kinds
 
 ```yaml
-- { kind: tool_called,     tool: <name> }                    # tool must fire
-- { kind: tool_not_called, tool: <name> }                    # tool must NOT fire
-- { kind: reply_contains,  all: [str, ...] }                 # all substrings present (case-insensitive)
-- { kind: reply_excludes,  any: [str, ...] }                 # none of these present
-- { kind: order_created,   required_total: 1650 }            # order row in DB
-- { kind: no_order,        reason: missing_fields|... }      # no order row
-- { kind: language,        must_be_one_of: [bangla, banglish, english] }  # detected reply language
+- { kind: tool_called, tool: <name> } # tool must fire
+- { kind: tool_not_called, tool: <name> } # tool must NOT fire
+- { kind: reply_contains, all: [str, ...] } # all substrings present (case-insensitive)
+- { kind: reply_excludes, any: [str, ...] } # none of these present
+- { kind: order_created, required_total: 1650 } # order row in DB
+- { kind: no_order, reason: missing_fields|... } # no order row
+- { kind: language, must_be_one_of: [bangla, banglish, english] } # detected reply language
 ```
 
 ## How to grow it
 
 **During the pilot** (spec §13 says this is THE moat):
+
 - Every time a merchant marks an AI reply as wrong → new case.
 - Every time the AI does something unexpected good → new case.
 - Every time we touch the system prompt → run the set, don't deploy if score drops.

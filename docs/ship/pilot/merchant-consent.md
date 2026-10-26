@@ -1,8 +1,8 @@
 # Pilot Participation Agreement
 
-**Merchant**: ********************\_\_\_********************
-**Page**: **********************\_**********************
-**Pilot start**: ******\_\_\_****** **Pilot end**: ******\_\_\_******
+**Merchant**: `[Merchant name]`
+**Page**: `[Page URL]`
+**Pilot start**: `[Start date]` · **Pilot end**: `[End date]`
 
 ## What you (the merchant) agree to
 
@@ -46,13 +46,13 @@ within 14 days.
 
 ---
 
-Merchant signature: ******************\_\_\_******************
+Merchant signature: `[Signature]`
 
-Date: ******\_******
+Date: `[Date]`
 
-Jobab signature: ********************\_\_********************
+Jobab signature: `[Signature]`
 
-Date: ******\_******
+Date: `[Date]`
 
 ---
 

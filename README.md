@@ -3,9 +3,9 @@
 **An AI sales agent for Bangladeshi social-commerce merchants — with a real-time merchant dashboard.**
 
 [![Node](https://img.shields.io/badge/node-20+-339933?logo=node.js&logoColor=white)](https://nodejs.org)
-[![pnpm](https://img.shields.io/badge/pnpm-9+-F69220?logo=pnpm&logoColor=white)](https://pnpm.io)
+[![pnpm](https://img.shields.io/badge/pnpm-10.34.9-F69220?logo=pnpm&logoColor=white)](https://pnpm.io)
 [![NestJS](https://img.shields.io/badge/NestJS-10-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com)
-[![Next.js](https://img.shields.io/badge/Next.js-14-000?logo=next.js&logoColor=white)](https://nextjs.org)
+[![Next.js](https://img.shields.io/badge/Next.js-16.4.3-000?logo=next.js&logoColor=white)](https://nextjs.org)
 [![Postgres](https://img.shields.io/badge/Postgres-16%20%2B%20pgvector-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](#license)
 
@@ -28,24 +28,24 @@ want, and manages contacts, orders, and catalog from one place.
 
 ## What's real today
 
-| Piece                                                                        | State                                                              |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Postgres schema, agent loop, order guardrail, BullMQ queue                   | real                                                               |
-| Groq tool-calling agent (Llama 3.3) + vision (Llama 4 Scout)                 | real                                                               |
-| Jina embeddings + pgvector ANN                                               | real (Jina key optional; falls back to describe-then-search)       |
-| Inbox: channels, assignment, tags, complaints, notes, activity, shared files | real                                                               |
-| Meta webhook ingest (signature verified)                                     | real                                                               |
-| `POST /webhooks/meta` over HTTPS in prod                                     | needs ngrok / deploy + Meta App Review                             |
-| Send API → `graph.facebook.com`                                              | real code; gated by `MESSENGER_DRY_RUN` in dev                     |
-| Catalog: CSV / Shopify / WooCommerce                                         | real                                                               |
-| bKash payment link                                                           | dev fallback; production needs merchant creds                      |
-| Auth                                                                         | dev password → cookie. Replace with Clerk / Supabase per spec §11. |
+| Piece                                                                        | State                                                                            |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Postgres schema, agent loop, order guardrail, BullMQ queue                   | real                                                                             |
+| Groq tool-calling agent (Llama 3.3) + vision (Llama 4 Scout)                 | real                                                                             |
+| Jina embeddings + pgvector ANN                                               | real (Jina key optional; falls back to describe-then-search)                     |
+| Inbox: channels, assignment, tags, complaints, notes, activity, shared files | real                                                                             |
+| Meta webhook ingest (signature verified)                                     | real                                                                             |
+| `POST /webhooks/meta` over HTTPS in prod                                     | needs ngrok / deploy + Meta App Review                                           |
+| Send API → `graph.facebook.com`                                              | real code; gated by `MESSENGER_DRY_RUN` in dev                                   |
+| Catalog: CSV / Shopify / WooCommerce                                         | real                                                                             |
+| bKash payment link                                                           | cash on delivery by default; verified bKash completion requires live credentials |
+| Auth                                                                         | bcrypt passwords, revocable signed sessions, emailed one-time password resets.   |
 
 ---
 
 ## 60-second quickstart
 
-Prereqs: **Node 20+**, **pnpm 9+**, **Docker**. Full setup walkthrough lives in
+Prereqs: **Node 22+**, **pnpm 10.34.9**, **Docker**. Full setup walkthrough lives in
 [`docs/build/1-setup.md`](docs/build/1-setup.md).
 
 ```bash
@@ -141,3 +141,9 @@ What's covered, briefly:
 
 MIT — see [`LICENSE`](LICENSE) if present, or the `license` field in
 `package.json`.
+
+## Production operations
+
+Use [the VPS runbook](ops/README.md) for the production Compose stack, TLS, immutable releases, backup/restore drills, failed-job recovery and launch acceptance. The mobile app remains an inactive scaffold and is excluded from this release.
+
+The catalog supports hybrid keyword/semantic retrieval using Postgres + pgvector, with model-tagged 1024-dimensional vectors and HNSW indexes. Set `JINA_API_KEY`, then backfill existing products through the merchant-scoped endpoint documented in the runbook. Without a key, keyword search continues to work.
