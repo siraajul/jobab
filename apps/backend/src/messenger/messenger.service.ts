@@ -130,13 +130,17 @@ export class MessengerService {
       replyToMessageId: options.replyToMessageId,
       deliveryStatus: 'pending',
     };
-    const outgoing = options.replyToMessageId
-      ? await this.prisma.message.upsert({
-          where: { replyToMessageId: options.replyToMessageId },
-          create: data,
-          update: {},
-        })
-      : await this.prisma.message.create({ data });
+    let outgoing: Message;
+    if (options.replyToMessageId) {
+      // Prisma's empty-update upsert can issue a read followed by an insert.
+      // ON CONFLICT DO NOTHING makes concurrent duplicate jobs converge on one row.
+      await this.prisma.message.createMany({ data: [data], skipDuplicates: true });
+      outgoing = await this.prisma.message.findUniqueOrThrow({
+        where: { replyToMessageId: options.replyToMessageId },
+      });
+    } else {
+      outgoing = await this.prisma.message.create({ data });
+    }
     const result = await this.prisma.$transaction(
       async (tx) => {
         // Takeover updates the same row. Once takeover returns, an older generation

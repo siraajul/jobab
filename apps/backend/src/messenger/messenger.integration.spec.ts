@@ -65,10 +65,17 @@ const url = process.env.JOBAB_TEST_DATABASE_URL;
       }));
       global.fetch = fetchMock as unknown as typeof fetch;
       const options = { replyToMessageId: sourceId, automationVersion: 0 };
-      await Promise.all([
-        service.sendText(conversationId, 'reply', undefined, options),
-        service.sendText(conversationId, 'reply', undefined, options),
-      ]);
+      // Wait for every attempt even on failure so cleanup cannot race a live send.
+      const results = await Promise.allSettled(
+        Array.from({ length: 8 }, () =>
+          service.sendText(conversationId, 'reply', undefined, options),
+        ),
+      );
+      expect(results.map((result) => result.status)).toEqual(Array(8).fill('fulfilled'));
+      const replies = results.flatMap((result) =>
+        result.status === 'fulfilled' && result.value ? [result.value.id] : [],
+      );
+      expect(new Set(replies).size).toBe(1);
       expect(fetchMock).toHaveBeenCalledTimes(1);
       expect(await db.message.count({ where: { conversationId, direction: 'out' } })).toBe(1);
       expect(await db.message.findUnique({ where: { replyToMessageId: sourceId } })).toMatchObject({
