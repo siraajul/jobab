@@ -32,14 +32,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Read the pinned packageManager version from package.json.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11.4.0
 
       - uses: actions/setup-node@v4
         with:
-          # pnpm 11.4 needs Node 22.13+ (uses node:sqlite). Node 20 will work
-          # if we ever downgrade pnpm.
+          # Match the Node version required by the application workspace.
           node-version: '22'
 
       - name: Install dependencies
