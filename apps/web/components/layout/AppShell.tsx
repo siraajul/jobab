@@ -41,9 +41,7 @@ export function AppShell({
           </div>
           <JamdaniBand className="mt-4 h-2 text-accent sm:mt-5" />
         </header>
-        <main className="flex-1 overflow-y-auto px-4 pb-8 pt-5 sm:px-8 sm:pt-6">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto px-4 pb-8 pt-5 sm:px-8 sm:pt-6">{children}</main>
       </div>
     </div>
   );

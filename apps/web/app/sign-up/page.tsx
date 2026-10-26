@@ -36,12 +36,17 @@ export default function SignUpPage() {
 
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-bg px-4 py-8 sm:px-6">
-      <form onSubmit={submit} className="w-full max-w-md overflow-hidden rounded-[20px] bg-surface shadow-lg">
+      <form
+        onSubmit={submit}
+        className="w-full max-w-md overflow-hidden rounded-[20px] bg-surface shadow-lg"
+      >
         <div className="flex flex-col items-center gap-3 px-7 pt-8">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-white shadow-md">
             <JamdaniMark size={20} />
           </div>
-          <div className="font-display text-[26px] font-bold leading-none tracking-display">Welcome to Jobab</div>
+          <div className="font-display text-[26px] font-bold leading-none tracking-display">
+            Welcome to Jobab
+          </div>
           <div className="text-center text-[13px] text-ink-2">
             Set up your shop in 30 seconds. The AI takes it from there.
           </div>
@@ -50,9 +55,28 @@ export default function SignUpPage() {
           <JamdaniBand className="mt-6 h-2 text-accent" />
         </div>
         <div className="flex flex-col gap-4 px-7 pb-7 pt-5">
-          <Field label="Shop name" value={organizationName} onChange={setOrganizationName} required placeholder="Rongdhonu Boutique" />
-          <Field label="Your name" value={name} onChange={setName} required placeholder="Aminul Islam" />
-          <Field label="Email" type="email" value={email} onChange={setEmail} required placeholder="you@shop.com" />
+          <Field
+            label="Shop name"
+            value={organizationName}
+            onChange={setOrganizationName}
+            required
+            placeholder="Rongdhonu Boutique"
+          />
+          <Field
+            label="Your name"
+            value={name}
+            onChange={setName}
+            required
+            placeholder="Aminul Islam"
+          />
+          <Field
+            label="Email"
+            type="email"
+            value={email}
+            onChange={setEmail}
+            required
+            placeholder="you@shop.com"
+          />
           <Field
             label="Set a password"
             type="password"

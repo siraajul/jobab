@@ -8,7 +8,10 @@ import type { Product } from '@/lib/types';
 export default function CatalogPage() {
   const [products, setProducts] = useState<Product[] | null>(null);
   useEffect(() => {
-    api.listProducts().then(setProducts).catch(() => setProducts([]));
+    api
+      .listProducts()
+      .then(setProducts)
+      .catch(() => setProducts([]));
   }, []);
   if (products === null) return null;
   return <CatalogClient initial={products} />;

@@ -2,32 +2,33 @@ import { cn } from '@/lib/cn';
 import type { ConversationStatus } from '@/lib/types';
 
 // Tones map to spec §4: AI handling · Needs you · You're handling · Paid.
-const TONE: Record<ConversationStatus, { label: string; dot: string; chip: string; text: string }> = {
-  bot: {
-    label: 'AI handling',
-    dot: 'bg-accent',
-    chip: 'bg-accent-soft',
-    text: 'text-accent-ink',
-  },
-  needs_human: {
-    label: 'Needs you',
-    dot: 'bg-amber',
-    chip: 'bg-amber-bg',
-    text: 'text-amber',
-  },
-  human: {
-    label: "You're handling",
-    dot: 'bg-you',
-    chip: 'bg-you-bg',
-    text: 'text-you',
-  },
-  closed: {
-    label: 'Closed',
-    dot: 'bg-ink-3',
-    chip: 'bg-surface-2',
-    text: 'text-ink-2',
-  },
-};
+const TONE: Record<ConversationStatus, { label: string; dot: string; chip: string; text: string }> =
+  {
+    bot: {
+      label: 'AI handling',
+      dot: 'bg-accent',
+      chip: 'bg-accent-soft',
+      text: 'text-accent-ink',
+    },
+    needs_human: {
+      label: 'Needs you',
+      dot: 'bg-amber',
+      chip: 'bg-amber-bg',
+      text: 'text-amber',
+    },
+    human: {
+      label: "You're handling",
+      dot: 'bg-you',
+      chip: 'bg-you-bg',
+      text: 'text-you',
+    },
+    closed: {
+      label: 'Closed',
+      dot: 'bg-ink-3',
+      chip: 'bg-surface-2',
+      text: 'text-ink-2',
+    },
+  };
 
 export function StatusPill({
   status,

@@ -6,6 +6,7 @@ tool calling, deterministic order guardrail, swappable LLM provider, catalog
 search (text), and per-message cost logging.
 
 ## Layout
+
 ```
 src/
   main.ts                  API entrypoint (Express + raw body on /webhooks/meta)
@@ -32,6 +33,7 @@ prisma/schema.prisma       §3 schema (multi-tenant, RBAC-ready, pgvector)
 ```
 
 ## Boot
+
 ```
 cp .env.example .env       # fill in DATABASE_URL, REDIS_URL, META_*, LLM_*
 npm install
@@ -43,6 +45,7 @@ npm test                   # guardrail + signature unit tests
 ```
 
 ## Not yet implemented (intentional)
+
 - `GeminiProvider.call` — wire to Gemini Generative API; interface is final.
 - `ShopifyAdapter`, `WooAdapter` — interface defined, fetchers TODO.
 - `MessengerService.sendText` — currently logs + records the outgoing message;
@@ -53,6 +56,7 @@ npm test                   # guardrail + signature unit tests
 - Push notifications — Phase 2 (§12). `device_tokens` table is in place.
 
 ## Things only a human can do (per spec §17)
+
 - Meta App Review + Business Verification.
 - Privacy policy + data-deletion endpoint hosting.
 - LLM eval set construction from real merchant conversations (§13).

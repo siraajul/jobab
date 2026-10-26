@@ -39,8 +39,7 @@ export const saveCustomerDetailTool: Tool = {
     const normalized = needle.replace(/[^\p{L}\p{N}]+/gu, '');
     const blobNormalized = blob.replace(/[^\p{L}\p{N}]+/gu, '');
     const grounded =
-      blob.includes(needle) ||
-      (normalized.length >= 4 && blobNormalized.includes(normalized));
+      blob.includes(needle) || (normalized.length >= 4 && blobNormalized.includes(normalized));
     if (!grounded) {
       return {
         ok: false,

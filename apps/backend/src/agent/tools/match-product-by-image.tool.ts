@@ -73,8 +73,7 @@ export const matchProductByImageTool: Tool = {
     if (candidates.length === 0) {
       const desc = await ctx.vision.describe(image_url);
       const query =
-        [desc.description, desc.category, ...desc.keywords].filter(Boolean).join(' ') ||
-        'product';
+        [desc.description, desc.category, ...desc.keywords].filter(Boolean).join(' ') || 'product';
       const text = await ctx.catalog.search(ctx.organizationId, query, TOP_K);
       candidates = text.map((t) => ({
         productId: t.product_id,
@@ -100,8 +99,7 @@ export const matchProductByImageTool: Tool = {
       })),
     });
 
-    const confident =
-      verdict.matchedProductId !== null && verdict.confidence >= HIGH_CONFIDENCE;
+    const confident = verdict.matchedProductId !== null && verdict.confidence >= HIGH_CONFIDENCE;
 
     // Rank: matched candidate first, then the rest by ANN score.
     const ranked = candidates.slice().sort((a, b) => {

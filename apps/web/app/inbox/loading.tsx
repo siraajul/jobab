@@ -9,8 +9,14 @@ export default function Loading() {
         </span>
         <span className="flex gap-1">
           <span className="h-1.5 w-1.5 animate-jb-pulse rounded-full bg-accent" />
-          <span className="h-1.5 w-1.5 animate-jb-pulse rounded-full bg-accent" style={{ animationDelay: '0.15s' }} />
-          <span className="h-1.5 w-1.5 animate-jb-pulse rounded-full bg-accent" style={{ animationDelay: '0.3s' }} />
+          <span
+            className="h-1.5 w-1.5 animate-jb-pulse rounded-full bg-accent"
+            style={{ animationDelay: '0.15s' }}
+          />
+          <span
+            className="h-1.5 w-1.5 animate-jb-pulse rounded-full bg-accent"
+            style={{ animationDelay: '0.3s' }}
+          />
         </span>
       </div>
     </div>

@@ -45,7 +45,15 @@ export function TagChip({
           aria-label={`Remove tag ${tag.name}`}
           className="-mr-0.5 shrink-0 rounded-full opacity-70 transition hover:opacity-100"
         >
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            aria-hidden
+          >
             <path d="M6 6l12 12M6 18L18 6" />
           </svg>
         </button>

@@ -8,7 +8,10 @@ import type { AnalyticsSummary } from '@/lib/types';
 export default function AnalyticsPage() {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   useEffect(() => {
-    api.analytics(7).then(setSummary).catch(() => setSummary(null));
+    api
+      .analytics(7)
+      .then(setSummary)
+      .catch(() => setSummary(null));
   }, []);
   return <AnalyticsClient initial={summary} />;
 }

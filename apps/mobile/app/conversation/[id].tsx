@@ -80,11 +80,17 @@ export default function ConversationScreen() {
           headerRight: () => (
             <View className="flex-row gap-2">
               {conv?.status === 'bot' ? (
-                <TouchableOpacity onPress={onTakeOver} className="rounded-full bg-accentSoft px-3 py-1.5">
+                <TouchableOpacity
+                  onPress={onTakeOver}
+                  className="rounded-full bg-accentSoft px-3 py-1.5"
+                >
                   <Text className="text-xs font-semibold text-accent">Take over</Text>
                 </TouchableOpacity>
               ) : (
-                <TouchableOpacity onPress={onHandBack} className="rounded-full bg-surface2 px-3 py-1.5">
+                <TouchableOpacity
+                  onPress={onHandBack}
+                  className="rounded-full bg-surface2 px-3 py-1.5"
+                >
                   <Text className="text-xs font-semibold text-ink2">Hand back</Text>
                 </TouchableOpacity>
               )}
@@ -97,13 +103,8 @@ export default function ConversationScreen() {
         ref={scrollRef}
         className="flex-1 px-4 py-3"
         onScroll={async ({ nativeEvent }) => {
-          if (
-            !id ||
-            !conv ||
-            olderExhausted ||
-            loadingOlder ||
-            nativeEvent.contentOffset.y > 60
-          ) return;
+          if (!id || !conv || olderExhausted || loadingOlder || nativeEvent.contentOffset.y > 60)
+            return;
           const oldest = conv.messages[0];
           if (!oldest) return;
           setLoadingOlder(true);
@@ -145,7 +146,9 @@ export default function ConversationScreen() {
         <TextInput
           value={draft}
           onChangeText={setDraft}
-          placeholder={conv?.status === 'bot' ? 'AI handling — take over to reply' : 'Type a reply…'}
+          placeholder={
+            conv?.status === 'bot' ? 'AI handling — take over to reply' : 'Type a reply…'
+          }
           editable={conv?.status !== 'bot'}
           className="flex-1 rounded-full bg-surface2 px-4 py-2 text-base text-ink"
         />

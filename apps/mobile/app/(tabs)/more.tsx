@@ -31,7 +31,10 @@ export default function MoreScreen() {
   const enablePush = async () => {
     const reg = await registerForPush();
     if (!reg) {
-      Alert.alert('Permission denied', 'Enable notifications in iOS / Android settings to receive alerts.');
+      Alert.alert(
+        'Permission denied',
+        'Enable notifications in iOS / Android settings to receive alerts.',
+      );
       return;
     }
     try {
@@ -47,7 +50,9 @@ export default function MoreScreen() {
     <View className="flex-1 gap-4 bg-bg p-5">
       <View className="rounded-2xl bg-surface p-4">
         <Text className="text-xs font-bold uppercase tracking-widest text-ink3">Signed in as</Text>
-        <Text className="mt-1 text-base font-semibold text-ink">{me?.name ?? me?.email ?? '…'}</Text>
+        <Text className="mt-1 text-base font-semibold text-ink">
+          {me?.name ?? me?.email ?? '…'}
+        </Text>
         {me?.name && <Text className="text-sm text-ink2">{me.email}</Text>}
       </View>
 
@@ -55,7 +60,9 @@ export default function MoreScreen() {
         onPress={enablePush}
         className={`rounded-2xl py-4 ${pushOn ? 'bg-paidBg' : 'bg-accent'}`}
       >
-        <Text className={`text-center text-base font-semibold ${pushOn ? 'text-paid' : 'text-white'}`}>
+        <Text
+          className={`text-center text-base font-semibold ${pushOn ? 'text-paid' : 'text-white'}`}
+        >
           {pushOn ? 'Push notifications enabled ✓' : 'Enable push notifications'}
         </Text>
       </TouchableOpacity>

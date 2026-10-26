@@ -7,7 +7,10 @@ export default function OrdersScreen() {
   const [orders, setOrders] = useState<OrderListItem[]>([]);
 
   useEffect(() => {
-    api.listOrders().then(setOrders).catch(() => undefined);
+    api
+      .listOrders()
+      .then(setOrders)
+      .catch(() => undefined);
   }, []);
 
   return (

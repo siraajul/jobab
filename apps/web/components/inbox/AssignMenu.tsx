@@ -100,7 +100,15 @@ export function AssignMenu({
 
 function PersonPlusIcon() {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden
+    >
       <circle cx="9" cy="8" r="3.5" />
       <path d="M3 20a6.5 6.5 0 0 1 12 0M18 8v6M21 11h-6" />
     </svg>
@@ -109,7 +117,16 @@ function PersonPlusIcon() {
 
 function CheckIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" className="text-accent" aria-hidden>
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      className="text-accent"
+      aria-hidden
+    >
       <path d="M5 12l4 4 10-10" />
     </svg>
   );

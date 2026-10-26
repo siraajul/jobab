@@ -10,7 +10,10 @@ const PublicEnvSchema = z.object({
 });
 
 const ServerEnvSchema = z.object({
-  DEV_PASSWORD: z.string().min(8, 'DEV_PASSWORD must be at least 8 characters').default('change-me'),
+  DEV_PASSWORD: z
+    .string()
+    .min(8, 'DEV_PASSWORD must be at least 8 characters')
+    .default('change-me'),
 });
 
 export const publicEnv = PublicEnvSchema.parse({

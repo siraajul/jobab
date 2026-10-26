@@ -15,6 +15,7 @@ You have **two paths**, both equivalent:
 ### 2. Via email
 
 Send a message to **delete@jobab.com** including:
+
 - Your Facebook profile name
 - (Optional) the merchant page(s) you've chatted with
 

@@ -6,7 +6,9 @@ import { BadRequestException, ExecutionContext, createParamDecorator } from '@ne
  * Supabase Auth resolver once §11 lands.
  */
 export const OrgId = createParamDecorator((_: unknown, ctx: ExecutionContext): string => {
-  const req = ctx.switchToHttp().getRequest<{ headers: Record<string, string | string[] | undefined> }>();
+  const req = ctx
+    .switchToHttp()
+    .getRequest<{ headers: Record<string, string | string[] | undefined> }>();
   const raw = req.headers['x-org-id'];
   const orgId = Array.isArray(raw) ? raw[0] : raw;
   if (!orgId) throw new BadRequestException('x-org-id header required');

@@ -8,7 +8,10 @@ import type { OnboardingStatus } from '@/lib/types';
 export default function OnboardingPage() {
   const [status, setStatus] = useState<OnboardingStatus | null>(null);
   useEffect(() => {
-    api.onboardingStatus().then(setStatus).catch(() => setStatus(null));
+    api
+      .onboardingStatus()
+      .then(setStatus)
+      .catch(() => setStatus(null));
   }, []);
   return <OnboardingClient initial={status} />;
 }
