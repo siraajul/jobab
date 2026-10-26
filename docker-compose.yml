@@ -12,11 +12,11 @@ services:
       POSTGRES_PASSWORD: jobab
       POSTGRES_DB: jobab
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - jobab-pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U jobab"]
+      test: ['CMD-SHELL', 'pg_isready -U jobab']
       interval: 5s
       timeout: 3s
       retries: 10
@@ -25,15 +25,15 @@ services:
     image: redis:7-alpine
     container_name: jobab-redis
     ports:
-      - "6379:6379"
+      - '6379:6379'
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 3s
       retries: 10
 
   backend:
-    profiles: ["apps"]
+    profiles: ['apps']
     build:
       context: .
       dockerfile: apps/backend/Dockerfile
@@ -48,15 +48,15 @@ services:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
     ports:
-      - "3000:3000"
+      - '3000:3000'
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/healthz"]
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/healthz']
       interval: 10s
       timeout: 3s
       retries: 5
 
   worker:
-    profiles: ["apps"]
+    profiles: ['apps']
     image: jobab/backend:dev
     container_name: jobab-worker
     env_file: apps/backend/.env
@@ -65,10 +65,10 @@ services:
       REDIS_URL: redis://redis:6379
     depends_on:
       backend: { condition: service_healthy }
-    command: ["node", "apps/backend/dist/agent/worker.js"]
+    command: ['node', 'apps/backend/dist/agent/worker.js']
 
   web:
-    profiles: ["apps"]
+    profiles: ['apps']
     build:
       context: .
       dockerfile: apps/web/Dockerfile
@@ -80,7 +80,7 @@ services:
     depends_on:
       backend: { condition: service_healthy }
     ports:
-      - "3001:3001"
+      - '3001:3001'
 
 volumes:
   jobab-pgdata:

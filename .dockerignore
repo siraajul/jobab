@@ -18,3 +18,16 @@ design-prototype
 docker-compose.yml
 *.md
 !apps/*/README.md
+
+.jobab
+**/.jobab
+ops/*.env
+**/.env*
+!**/.env.example
+graphify-out
+apps/mobile
+apps/docs
+
+**/.next-readiness/
+
+**/*.tsbuildinfo

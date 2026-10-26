@@ -1,0 +1,14 @@
+{
+  email {$ACME_EMAIL}
+}
+{$APP_DOMAIN} {
+  encode zstd gzip
+  header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  reverse_proxy web:3001
+}
+{$API_DOMAIN} {
+  encode zstd gzip
+  @private path /docs /docs/* /docs-json
+  respond @private 404
+  reverse_proxy api:3000
+}

@@ -20,7 +20,7 @@ jobs:
         env:
           POSTGRES_USER: jobab
           POSTGRES_PASSWORD: jobab
-          POSTGRES_DB: jobab
+          POSTGRES_DB: jobab_test
         ports: ['5432:5432']
         options: >-
           --health-cmd="pg_isready -U jobab"
@@ -32,8 +32,8 @@ jobs:
         ports: ['6379:6379']
 
     env:
-      DATABASE_URL: postgresql://jobab:jobab@localhost:5432/jobab
-      JOBAB_TEST_DATABASE_URL: postgresql://jobab:jobab@localhost:5432/jobab
+      DATABASE_URL: postgresql://jobab:jobab@localhost:5432/jobab_test
+      JOBAB_TEST_DATABASE_URL: postgresql://jobab:jobab@localhost:5432/jobab_test
       REDIS_URL: redis://localhost:6379
       META_APP_SECRET: ci-secret
       META_VERIFY_TOKEN: ci-verify
@@ -43,10 +43,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with: { version: 9 }
+        with: { version: 10.34.9 }
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Install
@@ -72,6 +72,25 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      - name: Audit production dependencies
+        run: pnpm security:audit
+
+      - name: Install browser
+        run: pnpm --filter @jobab/web exec playwright install --with-deps chromium
+
+      - name: Critical browser journeys
+        run: pnpm verify:readiness
+
+      - name: Upload readiness evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: readiness-evidence
+          path: |
+            .jobab/readiness
+            apps/web/test-results
+            apps/web/playwright-report
 
       - name: Build backend and dashboard
         run: |

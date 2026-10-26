@@ -1,0 +1,9 @@
+[Unit]
+Description=Jobab database backup
+After=docker.service
+Requires=docker.service
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/jobab
+ExecStart=/bin/bash /opt/jobab/scripts/ops/backup.sh
+UMask=0077

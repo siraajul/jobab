@@ -1,49 +1,27 @@
 # syntax=docker/dockerfile:1.7
-
-# Multi-stage build for the backend. Uses pnpm at the monorepo root so the
-# workspace + shared package install correctly.
-
-ARG NODE_VERSION=20-alpine
-
-# ─── deps stage — install ALL deps (incl. dev) once for both build + worker ──
-FROM node:${NODE_VERSION} AS deps
-RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
+FROM node:22-alpine AS build
+RUN apk add --no-cache openssl && corepack enable && corepack prepare pnpm@10.34.9 --activate
 WORKDIR /repo
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/backend/package.json apps/backend/
-RUN pnpm install --frozen-lockfile
-
-# ─── build stage — compile shared + backend ────────────────────────────────
-FROM deps AS build
+RUN pnpm install --frozen-lockfile --ignore-scripts
 COPY packages/shared packages/shared
 COPY apps/backend apps/backend
-RUN pnpm --filter @jobab/shared build
-RUN pnpm --filter @jobab/backend prisma:generate
-RUN pnpm --filter @jobab/backend build
+RUN pnpm --filter @jobab/shared build && pnpm --filter @jobab/backend prisma:generate && pnpm --filter @jobab/backend build
+RUN pnpm --filter @jobab/backend deploy --prod --legacy /out
+# Generate against the deployed dependency tree, rather than copying a guessed pnpm path.
+RUN pnpm --filter @jobab/backend exec prisma generate --schema=/out/prisma/schema.prisma
 
-# ─── runtime stage — slim production image ──────────────────────────────────
-FROM node:${NODE_VERSION} AS runtime
-RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
-WORKDIR /repo
-
-ENV NODE_ENV=production
-ENV PORT=3000
-
-# install ONLY production deps
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY packages/shared/package.json packages/shared/
-COPY apps/backend/package.json apps/backend/
-RUN pnpm install --frozen-lockfile --prod
-
-# bring compiled output + Prisma schema/migrations
-COPY --from=build /repo/packages/shared/dist packages/shared/dist
-COPY --from=build /repo/apps/backend/dist apps/backend/dist
-COPY apps/backend/prisma apps/backend/prisma
-COPY --from=build /repo/apps/backend/node_modules/.prisma apps/backend/node_modules/.prisma
-COPY --from=build /repo/apps/backend/node_modules/@prisma apps/backend/node_modules/@prisma
-
+FROM node:22-alpine AS runtime
+RUN apk add --no-cache openssl
+WORKDIR /app
+ENV NODE_ENV=production PORT=3000
+COPY --from=build --chown=node:node /out ./
 USER node
 EXPOSE 3000
-# default to API; override CMD to start the worker
-CMD ["node", "apps/backend/dist/main.js"]
+CMD ["node", "dist/main.js"]
+
+# Migrations use the build toolchain without adding development tools to runtime.
+FROM build AS migrate
+CMD ["pnpm", "--filter", "@jobab/backend", "prisma:deploy"]
