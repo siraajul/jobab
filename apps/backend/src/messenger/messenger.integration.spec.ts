@@ -10,7 +10,12 @@ const url = process.env.JOBAB_TEST_DATABASE_URL;
 (url ? describe : describe.skip)(
   'Message delivery and takeover (Postgres, mocked provider)',
   () => {
-    const db = new PrismaClient({ datasources: url ? { db: { url } } : undefined });
+    // Keep the pool smaller than the duplicate burst to catch connection starvation.
+    const testUrl = url ? new URL(url) : undefined;
+    testUrl?.searchParams.set('connection_limit', '2');
+    const db = new PrismaClient({
+      datasources: testUrl ? { db: { url: testUrl.href } } : undefined,
+    });
     const settings: Record<string, unknown> = {
       ENCRYPTION_KEY: 'k'.repeat(32),
       PROVIDER_TIMEOUT_MS: 1000,
@@ -71,7 +76,10 @@ const url = process.env.JOBAB_TEST_DATABASE_URL;
           service.sendText(conversationId, 'reply', undefined, options),
         ),
       );
-      expect(results.map((result) => result.status)).toEqual(Array(8).fill('fulfilled'));
+      const failures = results.flatMap((result) =>
+        result.status === 'rejected' ? [String(result.reason)] : [],
+      );
+      expect(failures).toEqual([]);
       const replies = results.flatMap((result) =>
         result.status === 'fulfilled' && result.value ? [result.value.id] : [],
       );
